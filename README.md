@@ -31,7 +31,9 @@
 ├── app/           Next.js 应用，唯一可部署单元（待创建）
 ├── 赛事手册/       赛事原始材料（只读）
 ├── LICENSE        开源协议（赛事强制要求）
-└── README.md
+├── README.md
+├── .gitignore
+└── .gitattributes
 ```
 
 ## 本地开发
@@ -44,11 +46,13 @@
 
 ## 团队
 
-| 成员 | GitHub |
-|---|---|
-| Huang Yu | [@Kevin87654](https://github.com/Kevin87654) |
+深圳大学 · 计算机与软件学院 · 3 人
 
-<!-- 其余成员待补充 -->
+| 成员 | GitHub | 专业 |
+|---|---|---|
+| Kevin | [@Kevin87654](https://github.com/Kevin87654) | 软件工程 |
+| waixr016 | [@waixr016](https://github.com/waixr016) | 计算机科学与技术 |
+| fodenspider | [@fodenspider](https://github.com/fodenspider) | 软件工程 |
 
 ## 开源协议
 

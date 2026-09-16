@@ -1,0 +1,19 @@
+# 统一换行符，避免 Windows / macOS 队友之间产生整文件级 diff 噪音
+* text=auto eol=lf
+
+# 二进制文件不做换行转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.zip  binary
+
+# 锁文件在合并时按正常文本处理，保证 lockfile 可读 diff
+package-lock.json  text
+pnpm-lock.yaml     text
+yarn.lock          text

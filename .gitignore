@@ -13,6 +13,10 @@ dist/
 .env
 .env.local
 .env*.local
+# 本地凭据的通用兜底：*.local.txt / config.local.* 一律不入库
+*.local.txt
+config.local.*
+!*.local.example.txt
 
 # ---------- Vercel ----------
 .vercel

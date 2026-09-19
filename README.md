@@ -47,9 +47,9 @@
 
 ## 协作规范
 
-三人**各自在自己的分支上开发**（`dev/kevin` / `dev/waixr016` / `dev/fodenspider`），本地测试通过后发起 PR，队友确认后合并到 `main`。分支划分、日常工作流、提交信息格式与禁止事项见 [**开发分支规范**](CONTRIBUTING.md)。
+**代码改动**走个人分支（`dev/kevin` / `dev/waixr016` / `dev/fodenspider`），本地测试通过后发起 PR，队友确认后合并到 `main`；**文档小改可直接提交 `main`**。完整规则见 [**开发分支规范**](CONTRIBUTING.md)。
 
-> **`main` 始终保持可部署状态**，不直接在 `main` 上开发。
+> **`main` 始终保持可部署状态**，不直接在 `main` 上提交代码。
 
 ## 文档
 

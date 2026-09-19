@@ -1,5 +1,8 @@
 # ---------- 依赖 ----------
 node_modules/
+.pnpm-store/
+output/playwright/
+.playwright-cli/
 .pnp
 .pnp.js
 

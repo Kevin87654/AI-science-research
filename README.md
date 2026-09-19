@@ -5,6 +5,28 @@
 项目文档在 [`docs/`](docs/) 目录，赛事原始材料在 [`赛事手册/`](赛事手册/) 目录。
 开发协作规则见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
+## 本地启动
+
+使用 Node.js 24 与 pnpm 11.19.0。在项目目录运行：
+
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+打开 http://localhost:3000。Windows 也可双击 `run-dev.bat`。
+当前工程不需要密钥即可启动；首页是产品介绍预览，尚未实现测评、AI 或数据保存。
+
+```bash
+pnpm check       # 代码规范、类型检查、生产构建
+pnpm start       # 构建成功后，本地启动生产版本
+```
+
+`GET /api/ping` 检查应用存活，明确返回数据库与 AI 尚未接入；不发起外部调用。
+后续接入配置见 `.env.example`，真实值只放 `.env.local` 或部署平台环境变量。
+
+工程边界、建议分工和开发顺序见 [`docs/工程起步与分工路线.md`](docs/工程起步与分工路线.md)。
+
 ## 团队
 
 深圳大学 · 计算机与软件学院 · 3 人

@@ -33,8 +33,10 @@ export interface ProgressSnapshot extends VersionedPayload {
 /**
  * 更新请求体。**不含 userId** —— 身份只从会话取，
  * 否则任何人都能凭请求体里的 id 写别人的记录。
+ * 带上 `roadmapId` 是为了让每次读写都落在一条明确的路线里。
  */
 export interface ProgressUpdateRequest {
+  roadmapId: string;
   taskId: string;
   status: TaskProgressStatus;
   note?: string | null;

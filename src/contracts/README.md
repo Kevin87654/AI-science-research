@@ -131,16 +131,16 @@ B 确认或调整后，把文件头部的「草稿」标记去掉即可；改字
 
 ## 四、HTTP 返回约定
 
-`api.ts` 里已有 `ApiResponse<T>`：
+`api.ts` 里有 `ApiResponse<T>` 和错误码类型 `ApiErrorCode`：
 
 ```ts
 { ok: true; data: T }
-{ ok: false; error: { code: string; message: string; requestId: string } }
+{ ok: false; error: { code: ApiErrorCode; message: string; requestId: string } }
 ```
 
 用**业务错误码**，不要透传数据库错误码。原因见《数据库接入探针记录》§5：网关返回的 `message` 是数据库原文，会带出表名、列名和约束名。
 
-建议的错误码（按需扩充）：
+错误码已经是类型（不再只是约定），出现新场景时在 `api.ts` 里加枚举值，并在这张表里补一行：
 
 | code | 场景 |
 |---|---|
@@ -151,7 +151,9 @@ B 确认或调整后，把文件头部的「草稿」标记去掉即可；改字
 | `CONFLICT` | 版本冲突、重复提交 |
 | `TIMEOUT` | 数据库调用超过 **8 秒**上限 |
 | `UPSTREAM_UNAVAILABLE` | 上游不可用，可重试 |
-| `INTERNAL` | 其他未预期错误 |
+| `INTERNAL` | 其他未预期错误（对外必须是中性文案） |
+
+落地的响应工具在 [`src/server/services/api-response.ts`](../server/services/api-response.ts)（`jsonOk` / `jsonError` / `toErrorResponse`）。
 
 ---
 

@@ -4,7 +4,9 @@
  *
  * 用法：
  *   pnpm build && pnpm start        # 另开一个终端
- *   node scripts/verify/identity-isolation.mjs [baseUrl]
+ *   node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
+ *
+ * 真实数据库模式需要环境变量用于 finally 清理，仅删除本轮 Cookie 对应的会话。
  *
  * 默认 baseUrl 为 http://127.0.0.1:3000。全部通过时退出码为 0。
  *
@@ -12,7 +14,12 @@
  * 以及**两个会话互相看不到对方的进度**。
  */
 
+import { createHash } from "node:crypto";
+
 const baseUrl = (process.argv[2] ?? process.env.VERIFY_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+const cleanupTokens = new Set();
+const databaseUrl = process.env.SERVER_CLOUDBASE_PG_REST_BASE_URL?.replace(/\/+$/, "");
+const databaseKey = process.env.SERVER_CLOUDBASE_PG_API_KEY;
 
 let passed = 0;
 let failed = 0;
@@ -30,12 +37,13 @@ function check(condition, label, detail = "") {
 async function call(path, { method = "GET", cookie, body, raw } = {}) {
   const headers = {};
   if (cookie) headers.cookie = cookie;
-  if (body !== undefined) headers["content-type"] = "application/json";
+  if (body !== undefined || raw !== undefined) headers["content-type"] = "application/json";
 
   const response = await fetch(`${baseUrl}${path}`, {
     method,
     headers,
-    body: body === undefined ? undefined : raw ?? JSON.stringify(body),
+    body: raw ?? (body === undefined ? undefined : JSON.stringify(body)),
+    signal: AbortSignal.timeout(15000),
   });
 
   const text = await response.text();
@@ -46,6 +54,10 @@ async function call(path, { method = "GET", cookie, body, raw } = {}) {
     json = null;
   }
   const setCookies = typeof response.headers.getSetCookie === "function" ? response.headers.getSetCookie() : [];
+  for (const cookie of setCookies) {
+    const token = /^ssr_session=([^;]+)/.exec(cookie)?.[1];
+    if (token) cleanupTokens.add(token);
+  }
   return { status: response.status, json, text, setCookies, headers: response.headers };
 }
 
@@ -55,6 +67,13 @@ function cookiePair(setCookies) {
 }
 
 console.log(`目标：${baseUrl}\n`);
+
+const health = await call("/api/ping");
+if (health.json?.data?.integrations?.database === "connected" && (!databaseUrl || !databaseKey)) {
+  throw new Error("真实数据库验收需要清理凭据，请使用 node --env-file=.env.local 运行脚本。");
+}
+
+try {
 
 // ── 1. 建立会话
 console.log("1. 建立匿名会话");
@@ -185,6 +204,26 @@ check(missingRoadmap.status === 400, "缺 roadmapId 返回 400", `实际 ${missi
 console.log("\n8. 回归：存活接口仍然正常");
 const ping = await call("/api/ping");
 check(ping.status === 200 && ping.json?.data?.application === "ready", "/api/ping 正常");
+
+} finally {
+  if (databaseUrl && databaseKey) {
+    console.log("\n9. 清理本轮创建的会话与进度");
+    for (const token of cleanupTokens) {
+      try {
+        const hash = createHash("sha256").update(token).digest("hex");
+        const url = `${databaseUrl}/v1/rdb/rest/sessions?token_hash=eq.${hash}`;
+        const headers = { Authorization: `Bearer ${databaseKey}` };
+        const removed = await fetch(url, { method: "DELETE", headers, signal: AbortSignal.timeout(15000) });
+        if (!removed.ok) throw new Error("删除失败");
+        const remaining = await fetch(`${url}&select=user_id`, { headers, signal: AbortSignal.timeout(15000) });
+        const rows = remaining.ok ? await remaining.json() : null;
+        check(Array.isArray(rows) && rows.length === 0, "测试会话已删除（进度由外键级联清理）");
+      } catch {
+        check(false, "测试数据清理失败，请检查数据库连接后处理本轮测试会话");
+      }
+    }
+  }
+}
 
 console.log(`\n结果：${passed} 通过 / ${failed} 未通过`);
 process.exit(failed === 0 ? 0 : 1);

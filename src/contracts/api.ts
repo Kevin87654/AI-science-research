@@ -31,7 +31,11 @@ export type ApiResponse<T> =
 export type HealthStatus = {
   application: "ready";
   integrations: {
-    database: "not_connected";
+    /**
+     * `connected` 只表示**服务端配置已到位**（两个 `SERVER_CLOUDBASE_*` 变量都存在），
+     * 不表示数据库此刻可达 —— 真实可达性要用一次实际读写验证。
+     */
+    database: "connected" | "not_connected";
     ai: "not_connected";
   };
 };

@@ -3,5 +3,10 @@
   "framework": "nextjs",
   "regions": ["hkg1"],
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm build"
+  "buildCommand": "pnpm build",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 300
+    }
+  }
 }

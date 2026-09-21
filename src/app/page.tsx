@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 
 const steps = [
@@ -15,8 +16,18 @@ export default function HomePage() {
           <p className="eyebrow">给刚刚开始探索科研的你</p>
           <h1 id="hero-title">科研，<br />从一个问题开始。</h1>
           <p className="hero-description">不必一开始就有明确方向。先认识自己的兴趣与基础，再找到一个可以完成的小行动。</p>
-          <a className="button" href="#journey">了解成长路径 <span aria-hidden="true">↗</span></a>
-          <p className="preview-note">当前为产品介绍预览，测评与学习路线将在后续开放。</p>
+          <div className="hero-actions">
+            <Link className="button" href="/assessment">
+              开始科研测评
+            </Link>
+            <Link className="button-secondary" href="/dashboard">
+              查看成长首页
+            </Link>
+          </div>
+          <p className="preview-note">
+            测评、画像与学习路线已经可以体验；校内资料与问答还在接入中。
+            不需要注册，也不会收集姓名、学号或手机号。
+          </p>
         </section>
         <section id="journey" className="journey" aria-labelledby="journey-title">
           <p className="eyebrow">一步一步，建立自己的方向</p>

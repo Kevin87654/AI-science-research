@@ -36,6 +36,11 @@ export type HealthStatus = {
      * 不表示数据库此刻可达 —— 真实可达性要用一次实际读写验证。
      */
     database: "connected" | "not_connected";
-    ai: "not_connected";
+    /**
+     * 与 `database` 同一套语义：`connected` 只表示**服务端配置已到位**
+     * （存在 `SERVER_CODEBUDDY_API_KEY`），不表示模型此刻可达 ——
+     * 真实可达性要靠一次实际调用验证。
+     */
+    ai: "connected" | "not_connected";
   };
 };

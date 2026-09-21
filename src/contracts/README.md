@@ -30,16 +30,20 @@
 | [`source.ts`](./source.ts) | C | 沿用 C 已交付字段 |
 | [`catalog.ts`](./catalog.ts) | C | 沿用 C 已交付字段 |
 | [`knowledge.ts`](./knowledge.ts) | C | 沿用 C 已交付字段 |
-| [`assessment.ts`](./assessment.ts) | **B** | ⚠️ 草稿，待 B 确认 |
-| [`profile.ts`](./profile.ts) | **B** | ⚠️ 草稿，待 B 确认 |
-| [`roadmap.ts`](./roadmap.ts) | **B** | ⚠️ 草稿，待 B 确认 |
+| [`assessment.ts`](./assessment.ts) | **B** | 已定（B 于 2026-09-20 确认，并补 `AssessmentOption.score`） |
+| [`profile.ts`](./profile.ts) | **B** | 已定（B 于 2026-09-20 确认，未改字段） |
+| [`roadmap.ts`](./roadmap.ts) | **B** | 已定（B 于 2026-09-20 确认，未改字段） |
 | [`identity.ts`](./identity.ts) | A | 已定 |
 | [`progress.ts`](./progress.ts) | A | 已定 |
 | [`api.ts`](./api.ts) | A | 已定（底座已有） |
 | [`samples.ts`](./samples.ts) | 全体 | 最小样例，编译期校验 |
 
-**关于 B 那三份草稿**：字段依据全部来自 PRD（§8 测评、§9 画像、§10 路线），但没有替 B 做产品决定。
-B 确认或调整后，把文件头部的「草稿」标记去掉即可；改字段时**必须同步改 `samples.ts`**。
+**B 的三份契约已确认（2026-09-20）。** 唯一改动是给 `AssessmentOption` 补了 `score`：
+问卷本身就是"契约形状的数据"，评分依据若另存一份映射表，会随题库改动漂移；放在选项上则不可能不同步。
+约定：`score` 为 **0～3**，`null` 表示该选项不计分（例如兴趣题的「还没想好」）。
+兴趣题的选项 `id`/`label` 直接就是 `InterestTag` 的 `id`/`label`（`source: "derived"`）。
+「不知道」**不是一个选项**，而是 `AssessmentAnswer.unknown` 标记 + 空 `optionIds`，
+这样才能把"诚实地不知道"和"没作答"分开。改字段时**必须同步改 `samples.ts`**。
 
 ---
 
@@ -55,12 +59,13 @@ B 确认或调整后，把文件头部的「草稿」标记去掉即可；改字
 | `createdAt` | 会话创建时间 | 否 |
 | `expiresAt` | 会话过期时间 | **是**，`null` 表示由 Cookie 决定 |
 
-### `assessment.ts` —— 测评（B，草稿）
+### `assessment.ts` —— 测评（B，已定）
 
 | 字段 | 含义 | 可空 |
 |---|---|---|
 | `dimension` | PRD §8.2 的八个维度之一 | 否 |
 | `type` | `single` / `multi` | 否 |
+| `score` | 选项得分 0～3；`null` = 该选项不计分 | 否（可显式为 `null`） |
 | `allowUnknown` | 是否提供「不知道/不了解」选项；认知题应为 `true` | 否 |
 | `required` | 是否必答 | 否 |
 | `optionIds` | 单选给 1 个、多选给多个 | 否（可为空数组） |
@@ -69,7 +74,7 @@ B 确认或调整后，把文件头部的「草稿」标记去掉即可；改字
 
 > `AssessmentSubmission` **不含 `userId`**（铁律 1）。
 
-### `profile.ts` —— 画像（B，草稿）
+### `profile.ts` —— 画像（B，已定）
 
 | 字段 | 含义 | 可空 |
 |---|---|---|
@@ -85,7 +90,7 @@ B 确认或调整后，把文件头部的「草稿」标记去掉即可；改字
 
 > `InterestTag.label` 会被 C 的 `SearchOptions.interests` 直接消费 —— 改标签文案等于改检索输入，两边要一起看。
 
-### `roadmap.ts` —— 路线（B，草稿）
+### `roadmap.ts` —— 路线（B，已定）
 
 | 字段 | 含义 | 可空 |
 |---|---|---|

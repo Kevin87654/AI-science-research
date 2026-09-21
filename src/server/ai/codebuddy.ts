@@ -33,6 +33,30 @@ type StreamMessage = {
   message?: { content?: unknown };
 };
 
+/**
+ * 一次调用里见过的消息类型与内容块类型。
+ * 平时不输出，只在「没取到文本」时打印 —— 那种情况最需要证据：
+ * 实测出现过"调用成功返回、耗时 32 秒、但一个文本块都没有"（`code=empty`），
+ * 有这份形状记录才能判断是模型没产出文本，还是我们认错了消息结构。
+ */
+function collectBlockTypes(content: unknown, sink: Set<string>): void {
+  if (typeof content === "string") {
+    sink.add("string");
+    return;
+  }
+  if (!Array.isArray(content)) return;
+
+  for (const block of content) {
+    if (typeof block !== "object" || block === null) continue;
+    const type = (block as { type?: unknown }).type;
+    sink.add(typeof type === "string" ? type : "unknown");
+  }
+}
+
+function describeShape(messageTypes: Set<string>, blockTypes: Set<string>): string {
+  return `messages=[${[...messageTypes].join(",")}] blocks=[${[...blockTypes].join(",")}]`;
+}
+
 /** 从 assistant 消息里取出文本块；结构按 SDK 文档，但用运行时判断而非强转类型。 */
 function extractText(content: unknown): string[] {
   if (typeof content === "string") return [content];
@@ -80,19 +104,26 @@ async function collectText(
     });
 
     const chunks: string[] = [];
+    const messageTypes = new Set<string>();
+    const blockTypes = new Set<string>();
 
     for await (const raw of conversation as AsyncIterable<unknown>) {
       const message = raw as StreamMessage;
+      messageTypes.add(message.subtype ? `${message.type}/${message.subtype}` : String(message.type));
       if (message.type === "assistant") {
+        collectBlockTypes(message.message?.content, blockTypes);
         chunks.push(...extractText(message.message?.content));
       }
     }
 
     const text = chunks.join("").trim();
     if (text.length === 0) {
-      // 单独一种失败码：这不是"调用报错"，而是"被超时截断"或"模型没输出文本"。
+      // 单独一种失败码：这不是"调用报错"，而是"被超时截断"或"模型根本没产出文本"。
       // 之前把它和普通失败混在一起，排查时看不出真正原因。
-      console.error(`[ai] 未取到文本 aborted=${String(abortController.signal.aborted)} 耗时=${Date.now() - startedAt}ms`);
+      const shape = process.env.SERVER_AI_DEBUG === "1" ? ` ${describeShape(messageTypes, blockTypes)}` : "";
+      console.error(
+        `[ai] 未取到文本 aborted=${String(abortController.signal.aborted)} 耗时=${Date.now() - startedAt}ms${shape}`,
+      );
       return abortController.signal.aborted
         ? { ok: false, code: "timeout", message: "模型响应超时" }
         : { ok: false, code: "empty", message: "模型没有返回可用的文本" };

@@ -129,22 +129,24 @@ async function chooseWithAi(
  *
  * ⚠️ **这是本轮实测出来的关键约束**：一次模型调用要 **25～45 秒**（其中约 13～15 秒是
  * CLI 子进程的固定启动开销，与提问长短无关）。所以"每答一题都问一次模型"会让整场测评
- * 光等待就 3～5 分钟 —— 对比赛演示是不可接受的。做成可配置，让团队按场合选：
+ * 光等待就 3～5 分钟 —— 对比赛演示（PRD 要求 3～5 分钟走完闭环）是不可接受的。
+ * 做成可配置，让团队按场合选：
  *
- * - `every`（当前默认）：**从第二题起**每题都由模型决定，最个性化，但每题要等 20～45 秒；
- * - `checkpoints`：每答完 3 题时交给模型，其余用规则推进（**演示推荐**）；
+ * - `checkpoints`（默认）：每答完 3 题时交给模型，其余用规则推进；
+ *   模型每次都会**完整读一遍全部作答**再决定方向，所以个性化仍在，只是不每题都问。
+ * - `every`：**从第二题起**每题都由模型决定，最个性化，但每题要等 20～45 秒；
  * - `off`：完全不调用模型，纯规则（也用于本地快速回归）。
  *
- * 注：无论哪种模式，**第一题都用规则瞬时返回**（模型此时没有任何作答可参考）。
- *
- * 用 `SERVER_AI_STEP_MODE` 切换。默认取 `every` 是为了忠实实现"根据每一次回复引导提问"
- * 这个需求；要上台演示时建议切到 `checkpoints`。
+ * 注 1：无论哪种模式，**第一题都用规则瞬时返回** —— 那时模型没有任何作答可参考，
+ *       它挑的题和规则完全一样，却要让用户在最不能等的一屏干等几十秒。
+ * 注 2：默认取 `checkpoints` 是**可用性优先**的取舍。要恢复"每次回复都由模型引导"，
+ *       设一个环境变量即可：`SERVER_AI_STEP_MODE=every`，不需要改代码。
  */
 type StepMode = "every" | "checkpoints" | "off";
 
 function resolveStepMode(): StepMode {
   const raw = process.env.SERVER_AI_STEP_MODE?.trim();
-  return raw === "every" || raw === "checkpoints" || raw === "off" ? raw : "every";
+  return raw === "every" || raw === "checkpoints" || raw === "off" ? raw : "checkpoints";
 }
 
 function shouldAskAi(mode: StepMode, request: AssessmentStepRequest): boolean {

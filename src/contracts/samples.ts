@@ -47,8 +47,8 @@ export const sampleQuestionnaire: AssessmentQuestionnaire = {
       type: "single",
       order: 1,
       options: [
-        { id: "a-yes", label: "能举例说明" },
-        { id: "a-partly", label: "听过但说不清" },
+        { id: "a-yes", label: "能举例说明", score: 2 },
+        { id: "a-partly", label: "听过但说不清", score: 1 },
       ],
       allowUnknown: true,
       required: true,

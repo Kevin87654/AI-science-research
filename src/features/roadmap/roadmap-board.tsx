@@ -34,6 +34,13 @@ export function RoadmapBoard() {
   const isClient = useIsClient();
   const [snapshot, setSnapshot] = useState<ProgressSnapshot | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  /**
+   * 保存失败时记下"刚才想做什么"，好让用户一键重试。
+   *
+   * 之前只弹一句报错、没有重试按钮 —— 用户得自己想起来再点一次同样的操作。
+   * PRD §19.3 要求失败可重试，所以把失败的动作留下来。
+   */
+  const [failedAction, setFailedAction] = useState<{ task: RoadmapTask; status: TaskProgressStatus } | null>(null);
   const [progressError, setProgressError] = useState<string | null>(null);
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -119,6 +126,7 @@ export function RoadmapBoard() {
 
     setPendingTaskId(task.id);
     setProblem(null);
+    setFailedAction(null);
 
     const result = await saveTaskProgress({
       roadmapId: roadmap.id,
@@ -131,7 +139,9 @@ export function RoadmapBoard() {
 
     if (!result.ok) {
       // 失败就原样保留界面状态，让用户自己决定是否重试，不假装成功。
+      // 同时记下这次的动作，界面会给出「重试」按钮，不用用户自己回想点过什么。
       setProblem(`${result.message}（这项任务的状态没有保存成功。）`);
+      setFailedAction({ task, status });
       return;
     }
 
@@ -223,9 +233,24 @@ export function RoadmapBoard() {
       ) : null}
 
       {problem ? (
-        <p className="error-text" role="alert">
-          {problem}
-        </p>
+        failedAction ? (
+          // 保存失败：给出「重试」，直接重放刚才那次操作（PRD §19.3 要求失败可重试）。
+          <div className="notice notice-warn" role="alert">
+            <p>{problem}</p>
+            <button
+              type="button"
+              className="button-secondary"
+              disabled={pendingTaskId !== null}
+              onClick={() => void updateStatus(failedAction.task, failedAction.status)}
+            >
+              重试
+            </button>
+          </div>
+        ) : (
+          <p className="error-text" role="alert">
+            {problem}
+          </p>
+        )
       ) : null}
 
       {roadmap.stages.map((stage) => {

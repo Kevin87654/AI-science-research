@@ -4,18 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { LogoLockup, LogoMark } from "./logo";
 import { NAV_ITEMS } from "./nav-items";
 
 /**
- * 全站外壳：固定背景大图 + 左侧「鼠标移入自动呼出」的功能菜单。
+ * 全站外壳：固定背景层 + 左侧常驻图标栏（鼠标移入展开成带文字的面板）。
  *
- * 为什么放在 layout 里：背景与侧栏是**全站唯一**的，页面里再各写一遍必然漂移；
- * 放在这里后，各路由页只管自己的内容（页面里原有的 `<SiteHeader />` 保持不变）。
+ * 为什么要"常驻图标"：收起时只留一条 16px 细线的做法让功能完全不可发现 ——
+ * 参考形态（终末地官网）是**图标一直可见**，鼠标移入才补上文字标签。
  *
- * 侧栏的展开方式有三种，都是为了不牺牲可用性：
- * ① 鼠标移入左侧窄栏（桌面主路径，纯 CSS `:hover`）；
+ * 三种展开方式，都是为了不牺牲可用性：
+ * ① 鼠标移入左栏（桌面主路径，纯 CSS `:hover`）；
  * ② 键盘 Tab 进面板内的链接（`:focus-within`，所以**链接始终在 DOM 里、可聚焦**，不能靠 display 切换）；
- * ③ 点窄栏上的按钮「固定」。触屏没有 hover，第 ③ 条是唯一的入口。
+ * ③ 点左栏底部的按钮「固定」（触屏没有 hover，这是唯一入口）。
+ *
+ * 图标栏那一组链接是 `aria-hidden` + `tabIndex={-1}`：它们只是同一批目的地的视觉副本，
+ * 让读屏重复念两遍导航是噪音；可访问的那一份在展开面板里。
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -55,6 +59,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
 
         <div className="dock-rail">
+          <Link className="dock-rail-logo" href="/" aria-label="科研小助理首页">
+            <LogoMark size={42} />
+          </Link>
+
+          <nav className="dock-rail-nav" aria-hidden="true">
+            {NAV_ITEMS.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  tabIndex={-1}
+                  className={active ? "dock-rail-item dock-rail-item-active" : "dock-rail-item"}
+                  title={item.label}
+                >
+                  {item.icon}
+                </Link>
+              );
+            })}
+          </nav>
+
           <button
             type="button"
             className="dock-handle"
@@ -62,21 +87,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-label={pinned ? "收起功能菜单" : "展开功能菜单"}
             onClick={() => setPinned((value) => !value)}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
           </button>
-          <span className="dock-rail-dots" aria-hidden="true"><i /><i /><i /></span>
-          <span className="dock-rail-hint" aria-hidden="true">菜单</span>
         </div>
 
         <div className="dock-panel">
           <Link className="dock-brand" href="/" aria-label="科研小助理首页">
-            <span className="dock-brand-mark" aria-hidden="true">研</span>
-            <span>
-              <span className="dock-brand-name">科研小助理</span>
-              <span className="dock-brand-sub">Research Copilot</span>
-            </span>
+            <LogoLockup size={42} />
           </Link>
 
           <nav className="dock-nav" aria-label="功能导航">

@@ -127,100 +127,84 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 /* =============================================================
    左侧图标栏（常驻）+ 展开面板
    ============================================================= */
-.dock { position: fixed; left: 0; top: 0; bottom: 0; width: var(--rail); z-index: 70; }
-.dock-scrim {
-  position: fixed; inset: 0; pointer-events: none; appearance: none; border: 0; padding: 0; cursor: default;
-  background: rgba(11, 13, 16, 0.26);
-  opacity: 0; transition: opacity 0.28s var(--ease);
-}
-.dock-is-pinned .dock-scrim { pointer-events: auto; }
-
-.dock-rail {
-  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
-  /* 面板是它的后一个兄弟节点，默认会盖住图标栏；抬一层让图标始终露在外面 */
-  z-index: 2;
-  padding: 16px 0 16px; gap: 12px;
-  background: rgba(250, 251, 249, 0.86);
+/*
+   左侧菜单 = **一列**。收起时只有 --rail（72px）宽、只看得到图标；
+   鼠标移入 / 键盘聚焦 / 点固定 → **整列变宽**到 --dock-w，文字从右侧长出来。
+   ⚠️ 早期版本是"图标栏 + 覆盖式面板"两套并排，展开后同一批选项会出现两列（改坏过），
+   所以这里只有一列，不要再另起一套 rail/panel。
+   实现要点：外层 `.dock` 固定窄宽 + `overflow: hidden`；内层 `.dock-inner` 固定为展开宽度。
+   于是变宽 = "把右边露出更多"，图标始终钉在左侧那 --rail 的宽度里，不会左右晃。
+*/
+.dock {
+  position: fixed; left: 0; top: 0; bottom: 0;
+  width: var(--rail); z-index: 70; overflow: hidden;
+  background: rgba(250, 251, 249, 0.94);
   backdrop-filter: blur(10px);
   border-right: 1px solid var(--line-soft);
+  transition: width 0.42s var(--ease);
 }
-.dock-rail-logo { display: block; color: var(--ink); text-decoration: none; }
-.dock-rail-logo:hover { color: #000; }
+.dock:hover, .dock:focus-within, .dock-is-pinned { width: var(--dock-w); }
+
+.dock-inner {
+  width: var(--dock-w); height: 100%;
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 22px 18px 16px 0;
+}
+
+.dock-brand { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.dock-brand-mark { width: var(--rail); flex: none; display: grid; place-items: center; }
+.dock-brand-text { display: grid; gap: 2px; line-height: 1.15; }
+.dock-brand-name { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+.dock-brand-sub { font-size: 9px; font-weight: 600; letter-spacing: 0.26em; color: var(--faint); white-space: nowrap; }
+
 /*
-  这一列按钮占**图标栏高度的一半多一点**（要求约 60%）：
-  用 `height: 58%` 定高 + `grid-auto-rows: 1fr` 让 6 个（将来加项也自动）均分，
-  所以窗口越高按钮越大、越矮越小，不会出现"小窗口里挤成一条"。
-  max-height 是给超高屏兜底的，免得单个按钮高到 100px 以上像块广告牌。
+   这一列按钮占菜单高度的约 60%：定高百分比 + `grid-auto-rows: 1fr` 均分，
+   窗口越高按钮越大、越矮越小。`calc(100% - 300px)` 那一项是保底 ——
+   矮窗口下不能让底部的 Contact us / 页脚 / 展开按钮被挤出可视区（外层是 overflow: hidden，挤出去就是没了）。
 */
-.dock-rail-nav {
-  flex: none; height: 58%; max-height: 680px; width: 100%;
+.dock-nav {
+  flex: none; height: min(58%, calc(100% - 300px)); max-height: 680px;
   display: grid; grid-auto-rows: minmax(0, 1fr); gap: 4px;
-  margin-top: 10px;
 }
-.dock-rail-bottom { margin-top: auto; width: 100%; display: grid; gap: 4px; }
-.dock-rail-item {
-  position: relative; display: grid; place-items: center;
-  height: 100%; min-height: 44px; width: 100%; color: #a9afb6; text-decoration: none;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.dock-rail-bottom .dock-rail-item { height: 54px; }
-.dock-rail-item svg { width: 27px; height: 27px; }
-.dock-rail-item:hover { color: var(--ink); background: rgba(11, 13, 16, 0.06); }
-/* 选中项：浅灰块 + 左侧 3px 黑条（参考站那套标记） */
-.dock-rail-item-active { color: var(--ink); background: rgba(11, 13, 16, 0.09); }
-.dock-rail-item-active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink); }
-.dock-handle {
-  appearance: none; border: 0; background: transparent; color: var(--muted);
-  width: 100%; height: 44px; display: grid; place-items: center; cursor: pointer; padding: 0;
-}
-.dock-handle:hover { color: var(--ink); background: rgba(11, 13, 16, 0.06); }
 
-.dock-panel {
-  position: absolute; left: 0; top: 0; bottom: 0; width: var(--dock-w);
-  z-index: 1;
-  display: flex; flex-direction: column; gap: 22px;
-  padding: 22px 18px 20px calc(var(--rail) + 14px);
-  background: #ffffff;
-  border-right: 1px solid var(--line);
-  transform: translateX(-100%);
-  transition: transform 0.4s var(--ease);
-}
-.dock:hover .dock-panel,
-.dock:focus-within .dock-panel,
-.dock-is-pinned .dock-panel { transform: translateX(0); transition-delay: 0.05s; }
-.dock:hover .dock-scrim,
-.dock:focus-within .dock-scrim,
-.dock-is-pinned .dock-scrim { opacity: 1; }
-
-.dock-brand { display: flex; align-items: center; text-decoration: none; }
-/* 面板内部宽度有限（292 − 78 − 18 ≈ 196px），logo 文字要单独收一档才不会换行 */
-.dock-brand .logo-lockup { gap: 11px; }
-.dock-brand .logo-name { font-size: 19px; }
-.dock-brand .logo-sub { font-size: 8.5px; letter-spacing: 0.22em; }
-.dock-nav { display: grid; gap: 2px; }
 .dock-item {
   position: relative; display: flex; align-items: center; gap: 14px;
-  padding: 12px 12px; text-decoration: none;
+  padding: 0 14px 0 0; text-decoration: none;
   color: rgba(11, 13, 16, 0.78); font-size: 15.5px;
-  border: 1px solid transparent;
   transition: background 0.15s ease, color 0.15s ease;
 }
 .dock-item:hover { background: rgba(11, 13, 16, 0.06); color: var(--ink); }
-.dock-item-icon { display: grid; place-items: center; width: 24px; height: 24px; flex: none; }
-.dock-item-icon svg { width: 21px; height: 21px; }
-.dock-item-label { flex: 1; min-width: 0; }
+/* 图标盒正好等于收起宽度：收起时图标居中在左那一列里，展开时文字从它右边长出来 */
+.dock-item-icon { width: var(--rail); flex: none; display: grid; place-items: center; color: #a9afb6; }
+.dock-item-icon svg { width: 27px; height: 27px; }
+.dock-item:hover .dock-item-icon { color: var(--ink); }
+.dock-item-label { flex: 1; min-width: 0; white-space: nowrap; }
 .dock-item-stack { display: grid; gap: 2px; line-height: 1.35; }
 .dock-item-note { font-size: 11.5px; color: var(--faint); }
 .dock-item-index { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px; color: var(--faint); letter-spacing: 0.08em; }
+/* 选中项：浅灰块 + 左侧 3px 黑条（参考站那套标记）；收起时正好是一格方块 */
 .dock-item-active { background: rgba(11, 13, 16, 0.09); color: var(--ink); font-weight: 700; }
 .dock-item-active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink); }
+.dock-item-active .dock-item-icon { color: var(--ink); }
 .dock-item-active .dock-item-index { color: rgba(11, 13, 16, 0.5); }
 .dock-item-active:hover { background: rgba(11, 13, 16, 0.13); }
 
-.dock-foot { margin-top: 0; padding-top: 18px; border-top: 1px solid var(--line-soft); }
-/* 对外联系方式：放在导航之后、页脚小字之前，与导航之间用一条细线隔开 */
-.dock-contact-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
-.dock-foot p { margin: 0 0 6px; font-size: 12.5px; color: var(--faint); line-height: 1.6; }
+/* 对外联系方式：`margin-top: auto` 把它和页脚一起压到菜单底部，上面的空白留给那列按钮 */
+.dock-contact-wrap { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+/*
+   页脚（说明文字 + 固定按钮）**收起时必须淡出**：它不像菜单项那样把内容摆在图标右侧、
+   靠裁切自动隐藏，而是从 x=0 起画的，不收起来就会在 72px 那一列里露出半截（踩过）。
+   展开时左内边距对齐到文字列（图标列 72 + 间距 14），不要贴屏幕左缘。
+*/
+.dock-foot {
+  padding: 16px 0 0 calc(var(--rail) + 14px);
+  border-top: 1px solid var(--line-soft);
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.dock:hover .dock-foot,
+.dock:focus-within .dock-foot,
+.dock-is-pinned .dock-foot { opacity: 1; transition-delay: 0.16s; }
+.dock-foot p { margin: 0 0 8px; font-size: 12.5px; color: var(--faint); line-height: 1.6; }
 .dock-pin {
   appearance: none; width: 100%; margin-top: 8px; cursor: pointer;
   border: 1px solid var(--line-strong); background: transparent; color: var(--muted);
@@ -228,6 +212,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 }
 .dock-pin:hover { color: var(--ink); border-color: var(--ink); }
 .dock-pin-on { border-color: var(--ink); color: var(--ink); background: rgba(11, 13, 16, 0.06); }
+/* 展开按钮同样把图标摆在左那一列里，收起时也点得到（触屏唯一的入口） */
+.dock-handle {
+  appearance: none; border: 0; background: transparent; color: var(--muted);
+  display: flex; align-items: center; gap: 14px; text-align: left;
+  width: 100%; height: 44px; padding: 0 14px 0 0; font: inherit; font-size: 14px; cursor: pointer;
+}
+.dock-handle-icon { width: var(--rail); flex: none; display: grid; place-items: center; }
+.dock-handle:hover { color: var(--ink); background: rgba(11, 13, 16, 0.06); }
 
 /* =============================================================
    顶栏（logo 已在图标栏顶部，这里只放"当前功能"与主行动）
@@ -560,7 +552,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   .backdrop-veil {
     background: linear-gradient(180deg, rgba(246, 247, 245, 0.9) 0%, rgba(246, 247, 245, 0.74) 30%, rgba(246, 247, 245, 0.82) 70%, rgba(246, 247, 245, 0.94) 100%);
   }
-  .dock-panel { width: min(var(--dock-w), 82vw); }
+  .dock-inner { width: min(var(--dock-w), 84vw); }
 }
 
 @media (max-width: 680px) {
@@ -587,5 +579,5 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-  .dock-panel { transform: translateX(0); }
+  .dock { transition-duration: 0.01ms; }
 }

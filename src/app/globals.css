@@ -37,7 +37,7 @@
 
   --radius: 0;                /* 工业风：一律直角 */
   --radius-sm: 0;
-  --rail: 64px;               /* 常驻图标栏宽度 */
+  --rail: 72px;               /* 常驻图标栏宽度 */
   --dock-w: 292px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -146,20 +146,32 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 }
 .dock-rail-logo { display: block; color: var(--ink); text-decoration: none; }
 .dock-rail-logo:hover { color: #000; }
-.dock-rail-nav { display: grid; gap: 3px; width: 100%; margin-top: 8px; }
+/*
+  这一列按钮占**图标栏高度的一半多一点**（要求约 60%）：
+  用 `height: 58%` 定高 + `grid-auto-rows: 1fr` 让 6 个（将来加项也自动）均分，
+  所以窗口越高按钮越大、越矮越小，不会出现"小窗口里挤成一条"。
+  max-height 是给超高屏兜底的，免得单个按钮高到 100px 以上像块广告牌。
+*/
+.dock-rail-nav {
+  flex: none; height: 58%; max-height: 680px; width: 100%;
+  display: grid; grid-auto-rows: minmax(0, 1fr); gap: 4px;
+  margin-top: 10px;
+}
+.dock-rail-bottom { margin-top: auto; width: 100%; display: grid; gap: 4px; }
 .dock-rail-item {
   position: relative; display: grid; place-items: center;
-  height: 52px; width: 100%; color: #a9afb6; text-decoration: none;
+  height: 100%; min-height: 44px; width: 100%; color: #a9afb6; text-decoration: none;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.dock-rail-item svg { width: 23px; height: 23px; }
+.dock-rail-bottom .dock-rail-item { height: 54px; }
+.dock-rail-item svg { width: 27px; height: 27px; }
 .dock-rail-item:hover { color: var(--ink); background: rgba(11, 13, 16, 0.06); }
 /* 选中项：浅灰块 + 左侧 3px 黑条（参考站那套标记） */
 .dock-rail-item-active { color: var(--ink); background: rgba(11, 13, 16, 0.09); }
 .dock-rail-item-active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink); }
 .dock-handle {
   appearance: none; border: 0; background: transparent; color: var(--muted);
-  width: 100%; height: 44px; margin-top: auto; display: grid; place-items: center; cursor: pointer; padding: 0;
+  width: 100%; height: 44px; display: grid; place-items: center; cursor: pointer; padding: 0;
 }
 .dock-handle:hover { color: var(--ink); background: rgba(11, 13, 16, 0.06); }
 
@@ -197,13 +209,17 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .dock-item-icon { display: grid; place-items: center; width: 24px; height: 24px; flex: none; }
 .dock-item-icon svg { width: 21px; height: 21px; }
 .dock-item-label { flex: 1; min-width: 0; }
+.dock-item-stack { display: grid; gap: 2px; line-height: 1.35; }
+.dock-item-note { font-size: 11.5px; color: var(--faint); }
 .dock-item-index { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px; color: var(--faint); letter-spacing: 0.08em; }
 .dock-item-active { background: rgba(11, 13, 16, 0.09); color: var(--ink); font-weight: 700; }
 .dock-item-active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink); }
 .dock-item-active .dock-item-index { color: rgba(11, 13, 16, 0.5); }
 .dock-item-active:hover { background: rgba(11, 13, 16, 0.13); }
 
-.dock-foot { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.dock-foot { margin-top: 0; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+/* 对外联系方式：放在导航之后、页脚小字之前，与导航之间用一条细线隔开 */
+.dock-contact-wrap { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .dock-foot p { margin: 0 0 6px; font-size: 12.5px; color: var(--faint); line-height: 1.6; }
 .dock-pin {
   appearance: none; width: 100%; margin-top: 8px; cursor: pointer;
@@ -527,7 +543,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
    窄屏
    ============================================================= */
 @media (hover: none), (max-width: 900px) {
-  :root { --rail: 56px; }
+  :root { --rail: 64px; }
   body { font-size: 16.5px; }
 }
 
@@ -548,7 +564,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 
 @media (max-width: 680px) {
-  :root { --rail: 52px; }
+  :root { --rail: 58px; }
   .hero { padding-block: 56px 52px; }
   .hero-description { font-size: 17px; }
   h1 { font-size: clamp(38px, 12vw, 60px); }

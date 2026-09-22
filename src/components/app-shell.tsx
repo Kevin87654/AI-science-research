@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { LogoLockup, LogoMark } from "./logo";
-import { NAV_ITEMS } from "./nav-items";
+import { CONTACT_LINK, NAV_ITEMS } from "./nav-items";
 
 /**
  * 全站外壳：固定背景层 + 左侧常驻图标栏（鼠标移入展开成带文字的面板）。
@@ -80,17 +80,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <button
-            type="button"
-            className="dock-handle"
-            aria-expanded={pinned}
-            aria-label={pinned ? "收起功能菜单" : "展开功能菜单"}
-            onClick={() => setPinned((value) => !value)}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
-              <path d="M4 7h16M4 12h16M4 17h16" />
-            </svg>
-          </button>
+          {/* 底部：对外联系方式 + 展开按钮。整块贴底，中间的空白留给上方那列图标 */}
+          <div className="dock-rail-bottom">
+            <a
+              className="dock-rail-item"
+              href={CONTACT_LINK.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              tabIndex={-1}
+              aria-hidden="true"
+              title={CONTACT_LINK.label}
+            >
+              {CONTACT_LINK.icon}
+            </a>
+
+            <button
+              type="button"
+              className="dock-handle"
+              aria-expanded={pinned}
+              aria-label={pinned ? "收起功能菜单" : "展开功能菜单"}
+              onClick={() => setPinned((value) => !value)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="dock-panel">
@@ -115,6 +130,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
+
+          <div className="dock-contact-wrap">
+            <a
+              className="dock-item dock-contact"
+              href={CONTACT_LINK.href}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              <span className="dock-item-icon" aria-hidden="true">{CONTACT_LINK.icon}</span>
+              <span className="dock-item-label dock-item-stack">
+                <span>{CONTACT_LINK.label}</span>
+                <span className="dock-item-note">{CONTACT_LINK.note}</span>
+              </span>
+              <span className="dock-item-index" aria-hidden="true">&#8599;</span>
+            </a>
+          </div>
 
           <div className="dock-foot">
             <p>匿名体验 · 不收集姓名、学号与手机号</p>

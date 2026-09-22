@@ -36,6 +36,25 @@ import { finalizeAiAnswer, prepareAiInput, resolveQaMode } from "@/features/ques
 import { answerQuestion } from "@/features/questions/engine";
 
 import { askText, isAiConfigured } from "./codebuddy";
+import { resolveAiTimeoutMs } from "./config";
+
+/**
+ * 问答链路自己的超时**下限**（毫秒）。
+ *
+ * ⚠️ **实测结论（2026-09-22，本机）**：问答的提示词比测评大得多 ——
+ * 里面带着完整证据块（每位教师的科室、方向、招募说明、邮箱、核对日期）加 7 条硬性要求，
+ * 而测评的提示词只有题目和选项。沿用测评的 60 秒默认值，**实测第一次调用正好在 60.0 秒被截断**
+ * （服务端日志：`超过 60000ms 仍未返回`），随后静默回落规则，用户看到的是"AI 没生效"。
+ *
+ * 所以这里设的是**下限**而不是默认值：`SERVER_AI_TIMEOUT_MS` 调得比它大就听环境变量的，
+ * 调得比它小则不采纳。刻意不让它被调得更短 —— 短了必然降级，那不是"更快"，是"不工作"。
+ * 真要把模型整个关掉，用 `SERVER_AI_QA_MODE=off`。
+ */
+const QA_TIMEOUT_FLOOR_MS = 120_000;
+
+function resolveQaTimeoutMs(): number {
+  return Math.max(resolveAiTimeoutMs(), QA_TIMEOUT_FLOOR_MS);
+}
 
 /**
  * 造一个注入给 `createAiFirstProvider` 的 AI 函数。
@@ -65,21 +84,37 @@ export function createQaAiAnswerer(
       return null;
     }
 
-    // ③ 调模型（唯一适配器是 B 的 askText；超时、并发上限都在那里处理）。
-    const result = await askText(prepared.prompt);
+    // ③ 调模型（唯一适配器是 B 的 askText；并发上限在那里处理，超时按问答的量级传）。
+    const result = await askText(prepared.prompt, { timeoutMs: resolveQaTimeoutMs() });
     if (!result.ok) {
       console.error(`[ai] 问答降级为规则：code=${result.code}`);
       return null;
     }
 
     // ④ 校验 + 拼接。`finalizeAiAnswer` 只接受能过全部拒绝规则的输出。
-    const answer = finalizeAiAnswer(result.text, prepared, baseline, catalog);
-    if (!answer) {
-      console.error("[ai] 问答降级为规则：输出未通过校验");
+    const outcome = finalizeAiAnswer(result.text, prepared, baseline, catalog);
+    if (!outcome.ok) {
+      // ⚠️ **原因必须打出来。** 最初的实现只打一句"输出未通过校验"，
+      //    结果线上只能确定"被拒了"、定不到哪一条 —— 队友在 Vercel 运行时日志里
+      //    只拿到这句话，只能列 5 条猜测（见《给C-问答AI回落复现-20260922》）。
+      //    而真正原因是 `actions[0]` 92 字超过了当时 80 的上限：一条 reason 就能定位的事。
+      //
+      //    reason 里只有字段名、数字和标识，不含模型原文，所以**可以常开**。
+      console.error(`[ai] 问答降级为规则：输出被拒 reason=${outcome.reason}`);
+      if (process.env.SERVER_AI_DEBUG === "1") {
+        console.error(
+          `[ai] 模型输出原文 len=${result.text.length} text=${JSON.stringify(result.text.slice(0, 800))}`,
+        );
+      }
       return null;
     }
 
-    console.error(`[ai] 问答由模型回答 耗时=${result.durationMs}ms 引用=${answer.citations.length}`);
-    return answer;
+    if (outcome.repairs.length > 0) {
+      console.error(`[ai] 问答输出已修补：${outcome.repairs.join(",")}`);
+    }
+    console.error(
+      `[ai] 问答由模型回答 耗时=${result.durationMs}ms 引用=${outcome.answer.citations.length}`,
+    );
+    return outcome.answer;
   };
 }

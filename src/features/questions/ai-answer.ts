@@ -17,16 +17,54 @@
 import type { Answer, Catalog, Knowledge, Source } from "@/contracts";
 
 /* ------------------------------------------------------------------ *
- * 上限：全部是"界面上放不下"的经验值，同时也是对模型输出的硬约束
+ * 上限
+ *
+ * ⚠️ **这几个数字的来历（2026-09-22 实测修正，数字都是量出来的，不是估的）**
+ *
+ * 第一版是拍脑袋定的「界面上放不下」的经验值：answer 600 / action 80 / limitation 200。
+ * 接上真实模型后这条输出被**整条拒掉**，逐字段量过才知道：
+ *
+ *   answer      223 字  vs 旧上限 600   → 通过，余量充足
+ *   actions[0]   92 字  vs 旧上限 80    → ❌ **唯一真正超限的字段**
+ *   limitation  188 字  vs 旧上限 200   → 通过，但只差 12 字，几乎没有余量
+ *   缺失信息     5 条，最长 32 字        → 通过
+ *
+ * 模型没写错 —— 它只是把行动写得具体（带上了"为什么这么做"），
+ * 而 limitation 恰恰是产品**希望它写清楚**的字段（产品红线要求明说覆盖范围）。
+ *
+ * 所以上限的作用要摆正：**防的是跑飞**（模型被对抗输入带成一篇小作文、几十 KB 的响应），
+ * 而不是规定它该写多长。定得太紧等于把"写得更负责"判成失败 —— 而且不报错，
+ * 只表现为"AI 从不接管"，极难查。现在按实测值的数倍留余量。
  * ------------------------------------------------------------------ */
 
-/** 回答正文上限。超过说明模型在写小作文，不是"适合新生的简短回答"。 */
-const MAX_ANSWER_LENGTH = 600;
+/** 回答正文上限。实测一次 223 字。 */
+const MAX_ANSWER_LENGTH = 1200;
 /** 行动条数上限。草案要求 1～3 个具体行动，留一点余量。 */
 const MAX_ACTIONS = 4;
-const MAX_ACTION_LENGTH = 80;
-const MAX_LIMITATION_LENGTH = 200;
-const MAX_MISSING_ITEMS = 5;
+/** 单条行动上限。实测 92 字就撞了旧上限 80。 */
+const MAX_ACTION_LENGTH = 240;
+/** 边界说明上限。实测 188 字，离旧上限 200 只差 12 字。 */
+const MAX_LIMITATION_LENGTH = 600;
+/** 缺失信息条数上限。实测常给到 5 条。 */
+const MAX_MISSING_ITEMS = 8;
+/** 单条缺失信息上限。实测最长 32 字。 */
+const MAX_MISSING_ITEM_LENGTH = 120;
+
+/**
+ * 对外暴露上限，供测试用。
+ *
+ * 放出去是为了让"超长必须被拒"那条用例跟着上限走 ——
+ * 否则改上限时测试会用旧的硬编码长度，**用例会悄悄失去意义**（长度不够就拒不掉，
+ * 但它仍然"通过"了断言的反面，反而暴露成失败……更容易被顺手改松）。
+ */
+export const QA_LIMITS = {
+  answer: MAX_ANSWER_LENGTH,
+  actions: MAX_ACTIONS,
+  action: MAX_ACTION_LENGTH,
+  limitation: MAX_LIMITATION_LENGTH,
+  missingItems: MAX_MISSING_ITEMS,
+  missingItem: MAX_MISSING_ITEM_LENGTH,
+} as const;
 
 const STATUSES: readonly Answer["status"][] = ["supported", "limited", "unknown"];
 
@@ -76,14 +114,25 @@ export type Evidence = {
  */
 export function collectEvidence(baseline: Answer, catalog: Catalog): Evidence {
   const sourceIds = baseline.citations.map((source) => source.id);
-  const teacherNames = baseline.teacherIds
-    .map((id) => catalog.teachers.find((teacher) => teacher.id === id)?.name)
+
+  /**
+   * 允许出现的教师姓名，**必须与下面 evidence.text 里出现的教师集合完全一致**。
+   *
+   * ⚠️ 这里最初是从 `baseline.teacherIds` 推的，实测踩了坑：
+   * FAQ 那一支的 `teacherIds` 是**空数组**（它的引用指向教师来源，但没登记 teacherId），
+   * 于是证据文本里明明列着姚俊梅和柴合言，`teacherNames` 却是空的 ——
+   * 模型一提到这两位就被判成"提到证据之外的老师"、整条作废。
+   * 日志：`reason=teacher-outside-evidence(szu-cs-yao-junmei)`。
+   *
+   * 判据应该只有一个：**这条证据里给了哪些老师**，也就是引用了哪些教师来源。
+   */
+  const teacherBySourceId = new Map(catalog.teachers.map((teacher) => [teacher.source.id, teacher]));
+  const teacherNames = baseline.citations
+    .map((source) => teacherBySourceId.get(source.id)?.name)
     .filter((name): name is string => typeof name === "string");
 
-  const byId = new Map(catalog.teachers.map((teacher) => [teacher.source.id, teacher]));
-
   const lines = baseline.citations.map((source) => {
-    const teacher = byId.get(source.id);
+    const teacher = teacherBySourceId.get(source.id);
     if (!teacher) {
       return `[${source.id}] ${source.title}（${source.publisher}）｜核对日期 ${source.checkedAt}｜${source.evidenceSummary}`;
     }
@@ -97,7 +146,11 @@ export function collectEvidence(baseline: Answer, catalog: Catalog): Evidence {
     ].join("\n");
   });
 
-  return { sourceIds, teacherNames, text: lines.join("\n") };
+  return {
+    sourceIds,
+    teacherNames: [...new Set(teacherNames)],
+    text: lines.join("\n"),
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -169,88 +222,208 @@ function parseJsonObject(text: string): Record<string, unknown> | null {
   }
 }
 
-function readString(value: unknown, limit: number): string | null {
-  if (typeof value !== "string") return null;
-  const normalized = value.replace(/\s+/g, " ").trim();
-  if (normalized.length === 0 || normalized.length > limit) return null;
-  return normalized;
-}
-
-function readStringArray(value: unknown, maxItems: number, itemLimit: number): string[] | null {
-  if (!Array.isArray(value) || value.length > maxItems) return null;
-  const out: string[] = [];
-  for (const item of value) {
-    const text = readString(item, itemLimit);
-    if (text === null) return null;
-    out.push(text);
-  }
-  return out;
-}
+/**
+ * 数组的**原始条目数**硬上限。
+ *
+ * 超过这个数说明模型根本没按 schema 走（提示词要的是 1～3 条行动、最多几条缺失信息），
+ * 这时候整条作废比截断更安全。**低于这个数但高于展示上限的，截断保留** ——
+ * 多写一条行动不值得丢掉整条回答。
+ */
+const MAX_RAW_ITEMS = 20;
 
 /**
- * 校验模型输出。返回 `null` 表示**必须降级到规则回答**。
+ * `limitation` 为空时的兜底文案。
  *
- * 拒绝的理由分四类，每一类都对应一个真实会发生的失败模式：
- * 1. **结构不合法** —— 不是 JSON、字段类型不对、超长；
- * 2. **引用了不存在的来源** —— 模型编 sourceId；
- * 3. **在输出里造链接** —— 草案明确禁止；
- * 4. **提到证据之外的老师** —— 例如把另一学院的同名教师混进来（草案第 5 条评测题）。
- *
- * 另外一条特殊规则：`status` 自报 `supported` 却**一个来源都没引**，
- * 说明它在凭印象说话 —— 这种降级为 `limited` 而不是整条丢弃，
- * 因为回答本身可能仍有参考价值，但我们不能给它盖上"有依据"的戳。
+ * 契约要求 `limitation` 不得留空，但**因为模型漏写一句边界就把整条回答丢掉**是得不偿失 ——
+ * 实测这条链路一次要等 24～63 秒。所以补一句诚实的、不误导的通用说明，而不是作废。
+ * 刻意不复用规则层的 limitation：那句话描述的是规则匹配的范围，安在模型回答上会张冠李戴。
  */
-export function validateAiDraft(
-  text: string,
-  evidence: Evidence,
-  catalog: Catalog,
-): AiQaDraft | null {
+const FALLBACK_LIMITATION =
+  "本条回答由模型依据服务端筛出的已核验资料组织，未逐条复核每个细节；涉及名额、截止时间、年级要求这类会变动的信息，请以官方通知和老师本人回复为准。";
+
+/** 规范化文本。空串与纯空白都归成 `null`，交给调用方决定是补还是废。 */
+function normalizeString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized.length === 0 ? null : normalized;
+}
+
+/** 超长就截断并记一笔 —— 保留内容比丢掉整条回答好。 */
+function clampString(value: string, limit: number, field: string, repairs: string[]): string {
+  if (value.length <= limit) return value;
+  repairs.push(`${field}-truncated(${value.length}->${limit})`);
+  return `${value.slice(0, limit)}…`;
+}
+
+type ReadArrayResult =
+  | { ok: true; items: string[]; repairs: string[] }
+  | { ok: false; reason: string };
+
+/**
+ * 读一个字符串数组。
+ *
+ * - 原始条数 > `MAX_RAW_ITEMS` → 作废（模型没按 schema 走）
+ * - 条数超过展示上限 → **取前 N 条**（多写一条不值得丢整条回答）
+ * - 单条超长 → 截断
+ * - 单条为空 → 丢掉这一条（不是作废整条）
+ */
+function readStringArray(
+  value: unknown,
+  maxItems: number,
+  itemLimit: number,
+  field: string,
+): ReadArrayResult {
+  if (value === undefined) return { ok: true, items: [], repairs: [] };
+  if (!Array.isArray(value)) return { ok: false, reason: `${field}-not-array` };
+  if (value.length > MAX_RAW_ITEMS) {
+    return { ok: false, reason: `${field}-too-many-items(${value.length}>${MAX_RAW_ITEMS})` };
+  }
+
+  const repairs: string[] = [];
+  const items: string[] = [];
+
+  for (const entry of value) {
+    const text = normalizeString(entry);
+    // 空条目直接跳过：它是模型顺手写了个空串，不代表整条回答有问题。
+    if (text === null) {
+      repairs.push(`${field}-empty-item-dropped`);
+      continue;
+    }
+    items.push(clampString(text, itemLimit, field, repairs));
+  }
+
+  if (items.length > maxItems) {
+    repairs.push(`${field}-capped(${items.length}->${maxItems})`);
+    items.length = maxItems;
+  }
+
+  return { ok: true, items, repairs };
+}
+
+export type DraftReview =
+  | { ok: true; draft: AiQaDraft; repairs: string[] }
+  | { ok: false; reason: string };
+
+/**
+ * 校验模型输出，**并且带上失败原因或修补记录**。
+ *
+ * ## 为什么必须带原因
+ *
+ * 这份实现最初把所有失败都归成同一个 `return null`，然后调用方只打一句"输出未通过校验"。
+ * 后果是**线上只能确定"被拒了"，定不到具体哪一条** —— 队友在 Vercel 运行时日志里
+ * 只拿到这一句话，只能列 5 条猜测（见《给C-问答AI回落复现-20260922》）。
+ * 而真正的原因是 `actions[0]` 92 字超过了当时 80 的上限 —— 一条 reason 就能定位的事，
+ * 硬是绕了一大圈。
+ *
+ * 所以这里的规矩是：**每一个 `ok: false` 都必须说清是哪一条规则、涉及哪个字段、数值多少。**
+ * reason 里只放字段名、数字和标识，**不放模型原文**（原文只在 `SERVER_AI_DEBUG=1` 时另打）。
+ *
+ * ## 两种处置：作废 vs 修补
+ *
+ * 判据是「这条信号说不说明模型跑偏了」：
+ *
+ * | 情况 | 处置 | 理由 |
+ * |---|---|---|
+ * | 不是 JSON / 字段类型不对 / 未知 sourceId / 输出含网址 / 提到证据外的老师 / answer 为空 | **作废** | 模型在编、在越界，或者压根没按 schema 走 |
+ * | 字段超长 / 条目多写 / 某条为空 / limitation 漏写 | **修补** | 只是啰嗦或漏了一句，丢掉整条回答不划算 |
+ *
+ * 这个区分是**实测教训**：最初一律作废，结果模型写得更具体反而被判失败，
+ * 而且不报错 —— 用户看到的是"等了 30 秒还是规则回答"。
+ */
+export function reviewAiDraft(text: string, evidence: Evidence, catalog: Catalog): DraftReview {
   const raw = parseJsonObject(text);
-  if (!raw) return null;
+  if (!raw) return { ok: false, reason: "not-json-object" };
 
-  const status = STATUSES.find((candidate) => candidate === raw.status);
-  if (!status) return null;
+  // `status` 容错：模型写成 `Limited`、带空格、或前后有引号都不该整条作废。
+  const statusKey = typeof raw.status === "string" ? raw.status.trim().toLowerCase() : "";
+  const status = STATUSES.find((candidate) => candidate === statusKey);
+  if (!status) return { ok: false, reason: `status-invalid(${statusKey || "missing"})` };
 
-  const answer = readString(raw.answer, MAX_ANSWER_LENGTH);
-  if (answer === null) return null;
+  const repairs: string[] = [];
 
-  const rawActions = raw.actions;
-  if (!Array.isArray(rawActions)) return null;
-  const actions = readStringArray(rawActions, MAX_ACTIONS, MAX_ACTION_LENGTH);
-  if (actions === null) return null;
+  const rawAnswer = normalizeString(raw.answer);
+  // answer 是这条回答的全部内容，为空就真的没什么可展示的了 —— 只能作废。
+  if (rawAnswer === null) return { ok: false, reason: "answer-empty" };
+  const answer = clampString(rawAnswer, MAX_ANSWER_LENGTH, "answer", repairs);
 
-  const rawSourceIds = raw.sourceIds;
-  if (!Array.isArray(rawSourceIds)) return null;
-  const sourceIds = readStringArray(rawSourceIds, evidence.sourceIds.length + 1, 64);
-  if (sourceIds === null) return null;
+  const actionsResult = readStringArray(raw.actions, MAX_ACTIONS, MAX_ACTION_LENGTH, "actions");
+  if (!actionsResult.ok) return actionsResult;
+  repairs.push(...actionsResult.repairs);
 
-  const missingInformation = readStringArray(raw.missingInformation ?? [], MAX_MISSING_ITEMS, 60);
-  if (missingInformation === null) return null;
+  const sourceIdsResult = readStringArray(
+    raw.sourceIds,
+    evidence.sourceIds.length + 1,
+    64,
+    "sourceIds",
+  );
+  if (!sourceIdsResult.ok) return sourceIdsResult;
+  repairs.push(...sourceIdsResult.repairs);
 
-  const limitation = readString(raw.limitation, MAX_LIMITATION_LENGTH);
-  if (limitation === null) return null;
+  const missingResult = readStringArray(
+    raw.missingInformation,
+    MAX_MISSING_ITEMS,
+    MAX_MISSING_ITEM_LENGTH,
+    "missingInformation",
+  );
+  if (!missingResult.ok) return missingResult;
+  repairs.push(...missingResult.repairs);
 
-  // ② 未知 sourceId：只要有一个不在允许集合里，整条作废。
+  const rawLimitation = normalizeString(raw.limitation);
+  let limitation: string;
+  if (rawLimitation === null) {
+    // 漏写边界不等于模型跑偏 —— 补一句诚实的通用说明，别丢掉整条回答。
+    repairs.push("limitation-missing-defaulted");
+    limitation = FALLBACK_LIMITATION;
+  } else {
+    limitation = clampString(rawLimitation, MAX_LIMITATION_LENGTH, "limitation", repairs);
+  }
+
+  // 未知 sourceId：这是**硬红线** —— 模型在编来源，整条作废。
   const allowed = new Set(evidence.sourceIds);
-  if (sourceIds.some((id) => !allowed.has(id))) return null;
+  const unknownSourceId = sourceIdsResult.items.find((id) => !allowed.has(id));
+  if (unknownSourceId !== undefined) {
+    return { ok: false, reason: `unknown-sourceId(${unknownSourceId})` };
+  }
 
-  // ③ 输出里自造网址。
-  if (URL_LIKE.test(answer) || actions.some((action) => URL_LIKE.test(action))) return null;
-  if (URL_LIKE.test(limitation)) return null;
+  // 输出里自造网址：URL 只能由来源注册表还原。
+  if (URL_LIKE.test(answer)) return { ok: false, reason: "url-in-answer" };
+  if (actionsResult.items.some((action) => URL_LIKE.test(action))) {
+    return { ok: false, reason: "url-in-actions" };
+  }
+  if (URL_LIKE.test(limitation)) return { ok: false, reason: "url-in-limitation" };
 
-  // ④ 提到了证据之外的老师。这里用**全量教师名**去扫，而不是只看证据里的，
-  //    因为问题恰恰是"模型抓了一个我们没给它的人"。
+  // 提到了证据之外的老师：用**全量教师名**去扫，而不是只看证据里的 ——
+  // 问题恰恰是"模型抓了一个我们没给它的人"（草案第 5 条评测题：同名教师混入）。
   const inEvidence = new Set(evidence.teacherNames);
-  const mentionedOutside = catalog.teachers
-    .filter((teacher) => !inEvidence.has(teacher.name) && answer.includes(teacher.name))
-    .map((teacher) => teacher.name);
-  if (mentionedOutside.length > 0) return null;
+  const outside = catalog.teachers.find(
+    (teacher) => !inEvidence.has(teacher.name) && answer.includes(teacher.name),
+  );
+  if (outside) return { ok: false, reason: `teacher-outside-evidence(${outside.id})` };
 
-  // 自报 supported 却没有引用：降级为 limited，而不是丢弃。
+  // 自报 supported 却没有引用：**降级为 limited**，而不是丢弃 ——
+  // 回答本身可能仍有参考价值，但不能给它盖上"有依据"的戳。
   const effectiveStatus: Answer["status"] =
-    status === "supported" && sourceIds.length === 0 ? "limited" : status;
+    status === "supported" && sourceIdsResult.items.length === 0 ? "limited" : status;
+  if (effectiveStatus !== status) repairs.push("supported-without-citation-downgraded");
 
-  return { status: effectiveStatus, answer, actions, sourceIds, missingInformation, limitation };
+  return {
+    ok: true,
+    draft: {
+      status: effectiveStatus,
+      answer,
+      actions: actionsResult.items,
+      sourceIds: sourceIdsResult.items,
+      missingInformation: missingResult.items,
+      limitation,
+    },
+    repairs,
+  };
+}
+
+/** 兼容包装：只要结果，不要原因。适合测试与"只关心能不能用"的调用方。 */
+export function validateAiDraft(text: string, evidence: Evidence, catalog: Catalog): AiQaDraft | null {
+  const review = reviewAiDraft(text, evidence, catalog);
+  return review.ok ? review.draft : null;
 }
 
 /**
@@ -286,12 +459,49 @@ export function composeAiAnswer(
   };
 }
 
+export type AiOutcome =
+  | { ok: true; answer: Answer; repairs: string[] }
+  | { ok: false; reason: string };
+
+/**
+ * 一次完整的"校验 + 拼接"。供服务端在拿到模型文本后调用。
+ *
+ * ⚠️ 返回值里**必须带着 reason 或 repairs** —— 调用方要把它写进日志。
+ * 只返回 `null` 的版本已经害过一次：线上只能看到"输出未通过校验"，
+ * 除了把 7 条规则逐个猜一遍没有别的办法。
+ */
+export function finalizeAiAnswer(
+  text: string,
+  prepared: { evidence: Evidence; registry: Map<string, Source> },
+  baseline: Answer,
+  catalog: Catalog,
+): AiOutcome {
+  const review = reviewAiDraft(text, prepared.evidence, catalog);
+  if (!review.ok) return { ok: false, reason: review.reason };
+  return {
+    ok: true,
+    answer: composeAiAnswer(review.draft, prepared.registry, baseline),
+    repairs: review.repairs,
+  };
+}
+
 /**
  * 取一条 AI 回答；任何一环不成立就返回 `null`，由调用方回落到规则回答。
  *
- * 注意 `baseline.citations` 为空时**直接返回 null，不调模型**：没有证据时模型能做的
- * 只有编。这条同时省下了额度 —— 而那些问句（人品、代写、名额、否定意图）
- * 恰好是用户最可能反复试的。
+ * ## 两道闸门，都必须在叫模型之前过
+ *
+ * 1. **`mode === "fallback"` 直接跳过。** 规则层的 fallback 出口是**主动拒绝**：
+ *    问人品、要代写、问名额、否定意图、以及什么都没匹配上。这些是产品红线与范围边界，
+ *    模型不该去"帮忙"绕过它们。
+ *
+ *    ⚠️ 这一条是**实测补上的**：名额分支为了告诉用户"去找官方核实"**故意带了引用**，
+ *    于是它通过了"有引用就调模型"这条闸门 —— 实测白等 **180 秒**才回落，
+ *    模型既帮不上忙（名额本来就不许猜），又烧了额度。
+ *
+ * 2. **`citations` 为空也跳过。** 没有证据时模型能做的只有编。
+ *
+ * 两道合起来的效果：只有"规则层给出了一条有依据的实质性回答"才交给模型去组织语言。
+ * 这既守住了红线，也把绝大多数最容易被人反复试的问句排除在付费调用之外。
  */
 export function prepareAiInput(
   question: string,
@@ -299,6 +509,9 @@ export function prepareAiInput(
   catalog: Catalog,
   knowledge: Knowledge,
 ): { prompt: string; evidence: Evidence; registry: Map<string, Source> } | null {
+  // 闸门 1：规则层主动拒绝的，不要交给模型。
+  if (baseline.mode === "fallback") return null;
+  // 闸门 2：没有证据，模型只能编。
   if (baseline.citations.length === 0) return null;
 
   const evidence = collectEvidence(baseline, catalog);
@@ -309,16 +522,4 @@ export function prepareAiInput(
   for (const source of knowledge.sources) registry.set(source.id, source);
 
   return { prompt: buildQaPrompt(question, evidence), evidence, registry };
-}
-
-/** 一次完整的"校验 + 拼接"。供服务端在拿到模型文本后调用。 */
-export function finalizeAiAnswer(
-  text: string,
-  prepared: { evidence: Evidence; registry: Map<string, Source> },
-  baseline: Answer,
-  catalog: Catalog,
-): Answer | null {
-  const draft = validateAiDraft(text, prepared.evidence, catalog);
-  if (!draft) return null;
-  return composeAiAnswer(draft, prepared.registry, baseline);
 }

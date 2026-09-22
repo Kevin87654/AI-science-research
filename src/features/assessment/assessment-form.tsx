@@ -17,7 +17,13 @@
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AssessmentAnswer, AssessmentMode, AssessmentQuestion, AssessmentStep } from "@/contracts";
+import type {
+  AssessmentAnswer,
+  AssessmentMode,
+  AssessmentQuestion,
+  AssessmentStep,
+  AssessmentStepProgress,
+} from "@/contracts";
 import { buildProfile } from "@/features/profile/build-profile";
 import { ensureSession, postJson } from "@/features/shared/api-client";
 import { buildFlow, saveFlow } from "@/features/shared/local-bridge";
@@ -46,6 +52,13 @@ export function AssessmentForm() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [mode, setMode] = useState<AssessmentMode>("full");
   const [steps, setSteps] = useState<StepItem[]>([]);
+  /**
+   * 服务端随每一步返回的进度。
+   *
+   * ⚠️ **必须用它，不要自己按题数推**（PRD v3 §4.1-A3）：原实现丢掉了这个字段，
+   * 改用 `已答 / 已走过的题数`，于是进度条会随自适应出题回落、第一题就接近 100%。
+   */
+  const [serverProgress, setServerProgress] = useState<AssessmentStepProgress | null>(null);
   const [cursor, setCursor] = useState(0);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -97,6 +110,7 @@ export function AssessmentForm() {
     }
 
     setSteps([{ question: first.question, probe: first.probe, reason: first.reason, answer: null }]);
+    setServerProgress(first.progress);
     setCursor(0);
     setPhase("asking");
     setBusy(false);
@@ -159,6 +173,8 @@ export function AssessmentForm() {
     setProblem(null);
 
     const step = await requestNextStep(steps, mode);
+    // 每一步都要刷新进度 —— 只设初值的话进度条会永远停在 0（本轮实测踩到过）。
+    setServerProgress(step.progress);
 
     if (step.done || !step.question) {
       await finish(steps, mode, demoFilled);
@@ -305,7 +321,21 @@ export function AssessmentForm() {
   }
 
   const answered = steps.filter((step) => step.answer !== null).length;
-  const progressRatio = steps.length === 0 ? 0 : answered / Math.max(steps.length, 1);
+
+  /**
+   * 进度条的分母用服务端给的「方面总数」，**不是已走过的题数**。
+   *
+   * ⚠️ 这是 PRD v3 §4.1-A3 的修复。原实现是 `answered / steps.length`，两个症状：
+   *  - 分母随自适应出题一路增长 → 翻页时进度条**回落**（第 1 题 100%、第 2 题 50%…）
+   *  - 第一题分子也是 1 → **一上来就 100%**，用户会以为只有一题
+   *  - 外部测试还观察到「点一下选项进度条就往前」—— 因为选中即写入 `answer`
+   *
+   * 而 `resolvedDimensions / totalDimensions` **事先可知、只增不减**，
+   * 而且对用户更有意义：**还有几个方面没问出结论**。
+   */
+  const totalDimensions = serverProgress?.totalDimensions ?? 0;
+  const resolvedDimensions = serverProgress?.resolvedDimensions ?? 0;
+  const progressRatio = totalDimensions > 0 ? resolvedDimensions / totalDimensions : 0;
 
   return (
     <section className="panel" aria-labelledby="question-title">
@@ -313,6 +343,7 @@ export function AssessmentForm() {
         <div>
           <p className="eyebrow">
             第 {cursor + 1} 题 · 已答 {answered} 题
+            {totalDimensions > 0 ? ` · 已能判断 ${resolvedDimensions} / ${totalDimensions} 个方面` : ""}
           </p>
           <h1 id="question-title">{current.question.prompt}</h1>
         </div>
@@ -320,7 +351,18 @@ export function AssessmentForm() {
       </div>
 
       <div className="progress-block">
-        <div className="progress-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progressRatio * 100)}>
+        <div
+          className="progress-bar"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progressRatio * 100)}
+          aria-valuetext={
+            totalDimensions > 0
+              ? `已经能判断 ${resolvedDimensions} / ${totalDimensions} 个方面`
+              : "进度未知"
+          }
+        >
           <span style={{ width: `${progressRatio * 100}%` }} />
         </div>
         <p className="muted small">

@@ -181,30 +181,23 @@ export function DashboardView() {
         </>
       )}
 
-      <div className="grid-2">
-        <article className="card">
-          <h2 className="card-title">兴趣方向</h2>
-          {profile.interests.length > 0 ? (
-            <ul className="tag-list">
-              {profile.interests.map((interest) => (
-                <li className="tag" key={interest.id}>
-                  {interest.label}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted">还没有勾选方向。做完一次任务之后再来选，通常会更准。</p>
-          )}
-        </article>
-
-        <article className="card card-quiet">
-          <h2 className="card-title">推荐资料</h2>
-          <p className="muted small">
-            校内公开资料（导师目录与常见问题）还在迁入主工程，接入后这里会显示与你方向相关的条目，
-            并且每一条都会带公开来源和核验日期。
-          </p>
-        </article>
-      </div>
+      {/* 「推荐资料」模块此前只显示一句占位文案（"还在迁入主工程"），永远不会产出内容。
+          2026-09-22 按 PRD v3 §4.1-A2 移除：宁可少一块，也不留一个永远空着的坑。
+          要恢复的话请连同真实推荐一起做，不要再放占位文案。 */}
+      <article className="card">
+        <h2 className="card-title">兴趣方向</h2>
+        {profile.interests.length > 0 ? (
+          <ul className="tag-list">
+            {profile.interests.map((interest) => (
+              <li className="tag" key={interest.id}>
+                {interest.label}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">还没有勾选方向。做完一次任务之后再来选，通常会更准。</p>
+        )}
+      </article>
 
       <div className="form-actions">
         <Link className="button-secondary" href="/profile">

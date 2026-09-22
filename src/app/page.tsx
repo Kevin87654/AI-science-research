@@ -15,7 +15,10 @@ export default function HomePage() {
         <section className="hero" aria-labelledby="hero-title">
           <p className="eyebrow">给刚刚开始探索科研的你</p>
           <h1 id="hero-title">科研，<br />从一个问题开始。</h1>
-          <p className="hero-description">不必一开始就有明确方向。先认识自己的兴趣与基础，再找到一个可以完成的小行动。</p>
+          <p className="hero-description">
+            不必一开始就有明确方向。这是一个可以一直用的工具：先花两分钟认识自己的兴趣与基础，
+            再拿到一条能照着做的学习路线、和你方向匹配的教师资料，以及带来源的科研问答。
+          </p>
           <div className="hero-actions">
             <Link className="button" href="/assessment">
               开始科研测评
@@ -25,7 +28,10 @@ export default function HomePage() {
             </Link>
           </div>
           <p className="preview-note">
-            测评、画像与学习路线已经可以体验；校内资料与问答还在接入中。
+            为什么先做测评？后面的路线和资料都按你的回答来 —— 不做评价、不排名，也没有对错。
+          </p>
+          <p className="preview-note">
+            测评、画像、学习路线、教师资料与科研问答都已上线。
             不需要注册，也不会收集姓名、学号或手机号。
           </p>
         </section>

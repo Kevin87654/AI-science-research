@@ -9,11 +9,14 @@
  *
  * 因此这里把"请求失败"当成一等状态处理：明确提示 + 可重试（PRD §19.3），
  * 而不是偷偷用本地值糊过去。
+ *
+ * `sources` 由页面（服务端）传入：任务的 `resourceIds` 只是 id，
+ * **标题与链接必须从来源注册表还原**，不写进路线数据（PRD §13.6）。见 §4.1-A4。
  */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { ProgressSnapshot, RoadmapTask, TaskProgressStatus } from "@/contracts";
+import type { ProgressSnapshot, RoadmapTask, Source, TaskProgressStatus } from "@/contracts";
 import { getQuestionnaire } from "@/features/assessment/question-bank";
 import { scoreAssessment } from "@/features/assessment/scoring";
 import { loadProgress, saveTaskProgress, toStatusMap } from "@/features/progress/progress-client";
@@ -28,7 +31,7 @@ const NOTE_MAX_LENGTH = 500;
 /** 取数的结果：要么拿到快照，要么拿到一句给用户看的错误。 */
 type ProgressOutcome = { snapshot: ProgressSnapshot | null; error: string | null };
 
-export function RoadmapBoard() {
+export function RoadmapBoard({ sources }: { sources: readonly Source[] }) {
   const router = useRouter();
   const flow = useLocalFlow();
   const isClient = useIsClient();
@@ -192,6 +195,19 @@ export function RoadmapBoard() {
   const completedCount = roadmap.tasks.filter((task) => statusMap.get(task.id)?.status === "completed").length;
   const totalMinutes = totalEstimatedMinutes(roadmap);
 
+  /**
+   * 把任务的 `resourceIds` 还原成完整来源。
+   *
+   * 查不到的 id **直接跳过**，不显示半条链接 —— 宁可不显示，也不给一个点不开或指错地方的参考。
+   * 任务没挂来源时返回空数组，界面上整段省略（`method-basics` / `goal` 目前就是空的，
+   * 原因见 `plan-roadmap.ts` 的 `RESOURCE_IDS` 注释：现有来源里没有与它们契合的）。
+   */
+  const sourceIndex = new Map(sources.map((source) => [source.id, source]));
+  const resourcesOf = (task: RoadmapTask): Source[] =>
+    task.resourceIds
+      .map((id) => sourceIndex.get(id))
+      .filter((source): source is Source => source !== undefined);
+
   return (
     <section className="panel" aria-labelledby="roadmap-title">
       <div className="panel-header">
@@ -272,6 +288,7 @@ export function RoadmapBoard() {
                 const entry = statusMap.get(task.id);
                 const status: TaskProgressStatus = entry?.status ?? "not-started";
                 const pending = pendingTaskId === task.id;
+                const resources = resourcesOf(task);
 
                 return (
                   <li className={`task task-${status}`} key={task.id}>
@@ -297,6 +314,26 @@ export function RoadmapBoard() {
                             </ul>
                           </dd>
                         </div>
+                        {/* 参考资料：只在真的有契合来源时才出现，不占位、不留空壳。 */}
+                        {resources.length > 0 ? (
+                          <div>
+                            <dt>参考资料</dt>
+                            <dd>
+                              <ul className="bullets">
+                                {resources.map((source) => (
+                                  <li key={source.id}>
+                                    <a href={source.url} target="_blank" rel="noreferrer noopener">
+                                      {source.title}
+                                    </a>
+                                    <span className="muted small">
+                                      （{source.publisher}，核对于 {source.checkedAt}）
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </dd>
+                          </div>
+                        ) : null}
                       </dl>
 
                       <div className="task-actions">

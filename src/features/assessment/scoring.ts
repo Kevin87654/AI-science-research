@@ -101,7 +101,18 @@ function average(values: number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-/** 单题的得分：多个选项取平均；全部选项都不计分时为 `null`。 */
+/**
+ * 单题的得分：多个选项**取平均**；全部选项都不计分时为 `null`。
+ *
+ * ⚠️ **能力类题目不要改成多选。** 取平均意味着"选得越多分越低"：
+ * 竞赛(2) + 实验室(3) 平均 2.5，反而低于"只进过实验室"的 3 分 ——
+ * 把**经历更丰富**判成**能力更弱**。
+ *
+ * 目前唯一的多选题是「兴趣方向」，它属于 `preference` 维度、**不计分**（只用于收集标签），
+ * 所以这个语义至今没有暴露。若将来要让能力类题目支持多选，
+ * **必须先改成"取最高档"**，否则题目一改就会引入评分错误。
+ * 背景见 PRD v3 §4.1-A6 与 `question-bank.ts` 里 `q-exp-activity` 的注释。
+ */
 function scoreOfQuestion(question: AssessmentQuestion, answer: AssessmentAnswer | undefined): number | null {
   if (!answer || answer.unknown || answer.optionIds.length === 0) return null;
 

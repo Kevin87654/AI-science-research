@@ -15,7 +15,9 @@ import { CONTACT_LINK, NAV_ITEMS } from "./nav-items";
  *
  * 展开方式只剩两种（按用户要求去掉了「固定菜单 / 展开菜单」按钮）：
  * ① 鼠标移入左栏（纯 CSS `:hover`）；
- * ② 键盘 Tab 进来（`:focus-within`）—— 链接始终在 DOM 中、可聚焦，不能靠 display 切换。
+ * ② 键盘 Tab 进来（CSS 里的 `:has(:focus-visible)`）—— 链接始终在 DOM 中、可聚焦，不能靠 display 切换。
+ * ⚠️ 用 `:focus-visible` 而不是 `:focus-within`：鼠标点过的链接也会留下焦点，
+ *    用 `:focus-within` 会导致鼠标移开后菜单仍然不收（要再点一下别处），已被反馈过。
  * ⚠️ 触屏没有 hover，去掉那两个按钮后移动端就没有展开入口了（已知代价，用户明确要求）。
  */
 export function AppShell({ children }: { children: React.ReactNode }) {

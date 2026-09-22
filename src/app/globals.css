@@ -143,7 +143,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
   border-right: 1px solid var(--line-soft);
   transition: width 0.42s var(--ease);
 }
-.dock:hover, .dock:focus-within { width: var(--dock-w); }
+/*
+   展开条件：鼠标悬停，或**键盘**把焦点移进来。
+   这里必须用 `:focus-visible` 而不是 `:focus-within` —— 鼠标点过的链接同样会留下焦点，
+   用 `:focus-within` 的话菜单在鼠标移开后仍不收（得再点一下别处），用户反馈过这个问题。
+   故意拆成两条而不是合并：万一浏览器不支持 `:has()`，失效的只是"键盘展开"，hover 依然可用；
+   合并成一条的话，选择器非法会把整条规则一起丢掉，连 hover 都没了。
+*/
+.dock:hover { width: var(--dock-w); }
+.dock:has(:focus-visible) { width: var(--dock-w); }
 
 .dock-inner {
   width: var(--dock-w); height: 100%;

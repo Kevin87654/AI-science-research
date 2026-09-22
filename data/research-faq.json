@@ -1,0 +1,349 @@
+{
+  "schemaVersion": "1.0.0",
+  "mode": "curated-rules",
+  "sources": [
+    {
+      "id": "szu-directory",
+      "title": "深圳大学智能服务计算研究中心 · 硕士生导师",
+      "url": "https://aisc.szu.edu.cn/rcpy1/sssds.htm",
+      "publisher": "深圳大学",
+      "evidenceSummary": "目录支持教师姓名与方向，不支持当前招募名额。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
+      "id": "szu-library",
+      "title": "深圳大学图书馆 · 学术搜索指南",
+      "url": "https://www.lib.szu.edu.cn/resources/SearchGuide",
+      "publisher": "深圳大学图书馆",
+      "evidenceSummary": "介绍馆藏与学术资源检索、全文获取等入口。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
+      "id": "scholar-help",
+      "title": "Google Scholar · Search Help",
+      "url": "https://scholar.google.com/intl/zh-CN/scholar/help.html",
+      "publisher": "Google Scholar",
+      "evidenceSummary": "支持按题名、作者检索、关联文献和引用导出。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
+      "id": "arxiv-about",
+      "title": "About arXiv",
+      "url": "https://info.arxiv.org/about/index.html",
+      "publisher": "arXiv",
+      "evidenceSummary": "arXiv 实施内容审核，但平台本身不开展同行评审。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
+      "id": "read-paper",
+      "title": "S. Keshav · How to Read a Paper",
+      "url": "https://web.stanford.edu/class/ee384m/Handouts/HowtoReadPaper.pdf",
+      "publisher": "S. Keshav；斯坦福课程网站提供副本",
+      "evidenceSummary": "提出分多遍、由概览到细节的阅读方法。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
+      "id": "mentor-guide",
+      "title": "Develop a mentor relationship",
+      "url": "https://undergradresearch.stanford.edu/get-started/develop-mentor-relationship",
+      "publisher": "Stanford Undergraduate Research",
+      "evidenceSummary": "支持阅读主页及论文、准备问题、联系并持续沟通的一般建议；不是深圳大学规定。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
+      "id": "ccf-directory",
+      "title": "CCF 推荐国际学术会议和期刊目录",
+      "url": "https://www.ccf.org.cn/Academic_Evaluation/By_category/",
+      "publisher": "中国计算机学会",
+      "evidenceSummary": "官方说明不建议简单将目录作为学术评价依据。",
+      "checkedAt": "2026-09-19",
+      "pageUpdatedAt": null,
+      "verification": "official-search-index"
+    }
+  ],
+  "faqs": [
+    {
+      "id": "find-mentor",
+      "question": "大一应该怎么找科研导师？",
+      "triggers": [
+        "怎么找导师",
+        "怎么找科研导师",
+        "寻找导师",
+        "找老师",
+        "找科研导师"
+      ],
+      "category": "联系准备",
+      "answer": "先从感兴趣的问题出发，在官方目录中寻找研究方向相关的老师，再阅读其主页和成果。首批样本只覆盖一个研究中心，检索不到不等于全校没有。",
+      "actions": [
+        "写下两个感兴趣的关键词。",
+        "选两位老师，各记录一个方向和一个想请教的问题。"
+      ],
+      "sourceIds": [
+        "szu-directory",
+        "mentor-guide"
+      ],
+      "limit": "建议不构成导师推荐背书。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "match-direction",
+      "question": "怎样判断研究方向是否适合我？",
+      "triggers": [
+        "方向适合",
+        "方向匹配",
+        "匹配度",
+        "选方向"
+      ],
+      "category": "联系准备",
+      "answer": "把自己的兴趣与教师公开研究方向逐项比较，并通过一篇论文了解实际研究问题。页面的标签重合只能说明值得进一步了解，不能预测录取或合作效果。",
+      "actions": [
+        "选择一个方向标签筛选资料。",
+        "写下“我感兴趣的原因”和“我还缺的基础”。"
+      ],
+      "sourceIds": [
+        "mentor-guide"
+      ],
+      "limit": "标签归一化与匹配理由由产品规则生成。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "undergraduate",
+      "question": "大一能联系实验室吗？",
+      "triggers": [
+        "大一能",
+        "大一可以",
+        "本科生能",
+        "本科生可以",
+        "进实验室"
+      ],
+      "category": "联系准备",
+      "answer": "本样本中姚俊梅、柴合言的官方介绍提到欢迎本科生。是否适合大一、当前是否有位置以及具体要求仍需确认；未写本科生招募的页面也不能推断为不接受。",
+      "actions": [
+        "查看相关教师详情中的招募说明。",
+        "向目标老师确认基础要求和每周可投入时间。"
+      ],
+      "sourceIds": [
+        "src-yao-junmei",
+        "src-chai-heyan"
+      ],
+      "limit": "这是官网文字的范围说明，不是实时名额查询。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "contact",
+      "question": "第一次联系导师怎么准备？",
+      "triggers": [
+        "联系导师",
+        "联系老师",
+        "发邮件",
+        "写邮件",
+        "邮件怎么"
+      ],
+      "category": "联系准备",
+      "answer": "先阅读目标老师主页，准备简短的真实自我介绍，说明对哪个研究问题感兴趣，并提出具体问题。可询问是否方便交流以及能从什么学习任务开始。",
+      "actions": [
+        "整理专业、年级、真实课程或项目经历。",
+        "写出一个具体研究问题，检查姓名和公开邮箱后自行发送。"
+      ],
+      "sourceIds": [
+        "mentor-guide"
+      ],
+      "limit": "产品提供准备建议，不替用户发送邮件。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "no-experience",
+      "question": "没有项目经历怎么办？",
+      "triggers": [
+        "没有项目",
+        "没有经历",
+        "零基础",
+        "没经验"
+      ],
+      "category": "联系准备",
+      "answer": "可以如实介绍已学课程、做过的练习和时间安排，再请教需要补齐的知识。产品建议先完成一张论文阅读卡片，让兴趣变成可讨论的问题；不应把练习包装为正式研究成果。",
+      "actions": [
+        "做一次摘要阅读，记录研究问题和三个不懂的词。",
+        "用真实经历说明你已经做了哪些准备。"
+      ],
+      "sourceIds": [
+        "mentor-guide",
+        "read-paper"
+      ],
+      "limit": "阅读卡片是本产品的训练建议，不是学校入组门槛。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "homepage",
+      "question": "教师主页应该看什么？",
+      "triggers": [
+        "主页看",
+        "怎么看主页",
+        "教师主页",
+        "导师主页"
+      ],
+      "category": "联系准备",
+      "answer": "先看研究方向，再看有日期的成果与招募说明。把页面未写的信息列为待确认；我们核验网页的日期与学校更新网页的日期不是一回事。",
+      "actions": [
+        "记录研究关键词、来源链接和查阅日期。",
+        "确认招募对象，不把硕士招生说明当成本科生招募。"
+      ],
+      "sourceIds": [
+        "szu-directory",
+        "src-yao-junmei"
+      ],
+      "limit": "成果多少、主页新旧都不能单独衡量导师好坏。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "search-paper",
+      "question": "在深大怎么查找论文？",
+      "triggers": [
+        "查找论文",
+        "查论文",
+        "检索论文",
+        "论文检索",
+        "搜索论文"
+      ],
+      "category": "论文入门",
+      "answer": "可从深圳大学图书馆学术搜索指南进入检索，用研究关键词、作者或准确题名缩小范围。全文是否可读取决于馆藏、开放获取和当前访问条件。",
+      "actions": [
+        "在图书馆入口试搜一个中文关键词及其英文对应词。",
+        "记录一篇论文的题名、作者、年份和原始链接。"
+      ],
+      "sourceIds": [
+        "szu-library",
+        "scholar-help"
+      ],
+      "limit": "校外访问方式以图书馆当前说明为准。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "read-paper",
+      "question": "第一篇论文读不懂怎么办？",
+      "triggers": [
+        "读不懂",
+        "怎么读论文",
+        "如何读论文",
+        "阅读论文",
+        "第一篇论文"
+      ],
+      "category": "论文入门",
+      "answer": "先读标题、摘要、引言与结论，判断问题和贡献，再决定是否深入方法及图表。遇到不懂的术语先做记录，无需第一次就掌握全部推导。",
+      "actions": [
+        "用三句话记录研究问题、主要方法和作者的结论。",
+        "挑三个陌生术语补课后再读一次。"
+      ],
+      "sourceIds": [
+        "read-paper"
+      ],
+      "limit": "适用于入门训练；不同学科论文结构可能不同。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "reading-card",
+      "question": "文献阅读卡片写什么？",
+      "triggers": [
+        "阅读卡片",
+        "文献卡片",
+        "阅读笔记"
+      ],
+      "category": "论文入门",
+      "answer": "建议记录题名与来源、研究问题、方法、证据、局限和自己的疑问。区分论文作者的主张与自己的理解，暂时无法判断的部分保留疑问。",
+      "actions": [
+        "给一篇论文填写六项阅读记录。",
+        "挑一项局限返回原文核对。"
+      ],
+      "sourceIds": [
+        "read-paper"
+      ],
+      "limit": "六项卡片是产品编辑的练习模板。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "preprint",
+      "question": "预印本等于正式发表吗？",
+      "triggers": [
+        "预印本",
+        "arxiv"
+      ],
+      "category": "论文入门",
+      "answer": "预印本平台上的版本不自动等于期刊或会议正式发表版本。arXiv 对提交内容做审核，但不由平台开展同行评审；同一工作可能另有正式发表版本。",
+      "actions": [
+        "检查论文页面的版本、期刊引用及 DOI。",
+        "引用时标明实际阅读的版本。"
+      ],
+      "sourceIds": [
+        "arxiv-about"
+      ],
+      "limit": "具体发表状态必须逐篇核验。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "ccf",
+      "question": "CCF 分类能直接判断论文质量吗？",
+      "triggers": [
+        "ccf",
+        "论文质量",
+        "导师排名"
+      ],
+      "category": "论文入门",
+      "answer": "CCF 目录提供计算机领域会议与期刊的参考信息。官方说明刊物或会议的影响力不能直接代表单篇论文影响力，因此还应阅读论文的问题、证据与局限。",
+      "actions": [
+        "到 CCF 官方目录核对刊物或会议。",
+        "列出论文实际解决的问题，而不只记录分类。"
+      ],
+      "sourceIds": [
+        "ccf-directory",
+        "read-paper"
+      ],
+      "limit": "不按目录对老师做人品或整体能力排名。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    },
+    {
+      "id": "citation",
+      "question": "如何核对参考文献？",
+      "triggers": [
+        "参考文献",
+        "引用规范",
+        "引用怎么",
+        "引用核对"
+      ],
+      "category": "论文入门",
+      "answer": "使用完整题名、作者等信息检索原始记录，核对年份和出处。工具导出的引用仍需检查，不应把搜索不到或未读过的条目写成已核实文献。",
+      "actions": [
+        "搜索准确题名，打开出版页面或可信机构记录。",
+        "保存链接，并按课程或期刊要求整理格式。"
+      ],
+      "sourceIds": [
+        "scholar-help"
+      ],
+      "limit": "格式要求因课程与刊物而异，首版不自动判定所有格式合规。",
+      "checkedAt": "2026-09-19",
+      "editorial": true
+    }
+  ]
+}

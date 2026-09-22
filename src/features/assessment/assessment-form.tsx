@@ -161,7 +161,7 @@ export function AssessmentForm() {
     const step = await requestNextStep(steps, mode);
 
     if (step.done || !step.question) {
-      await finish(steps);
+      await finish(steps, mode, demoFilled);
       return;
     }
 
@@ -170,8 +170,16 @@ export function AssessmentForm() {
     setBusy(false);
   }
 
-  /** 生成画像：评分、画像、路线全部走确定性纯函数，与 AI 无关。 */
-  async function finish(finalSteps: StepItem[]) {
+  /**
+   * 生成画像：评分、画像、路线全部走确定性纯函数，与 AI 无关。
+   *
+   * ⚠️ `finalMode` / `isDemo` **必须由调用方显式传入，不能在这里读 state。**
+   * 原来这里读 `mode` 与 `demoFilled`，而"用示例答案"按钮是在**同一个 tick 里**先
+   * `setMode/setDemoFilled` 再调本函数 —— React 的 state 还没更新，于是用示例答案
+   * 生成的画像**没有被打上 `isDemo` 标记**（违反契约"演示数据必须显式标记"），
+   * 提交里的 `questionnaireId` 也还是全量版。改为显式传参后，这类时序问题不可能再出现。
+   */
+  async function finish(finalSteps: StepItem[], finalMode: AssessmentMode, isDemo: boolean) {
     setBusy(true);
     setProblem(null);
 
@@ -182,7 +190,7 @@ export function AssessmentForm() {
       return;
     }
 
-    const questionnaire = getQuestionnaire(mode);
+    const questionnaire = getQuestionnaire(finalMode);
     const submittedAt = new Date().toISOString();
     const submission = buildSubmission(questionnaire, answersOf(finalSteps), submittedAt);
     const scoring = scoreAssessment(questionnaire, submission);
@@ -193,10 +201,10 @@ export function AssessmentForm() {
       submissionId,
       scoring,
       generatedAt: submittedAt,
-      isDemo: demoFilled,
+      isDemo,
     });
 
-    const saved = saveFlow(buildFlow({ submission, profile, roadmap: null, savedAt: submittedAt, isDemo: demoFilled }));
+    const saved = saveFlow(buildFlow({ submission, profile, roadmap: null, savedAt: submittedAt, isDemo }));
     setBusy(false);
 
     if (!saved.ok) {
@@ -207,19 +215,25 @@ export function AssessmentForm() {
     router.push("/profile");
   }
 
-  /** 演示快速通道：直接填入示例答案，跳过整段对话。 */
+  /**
+   * 演示快速通道：直接填入示例答案，跳过整段对话。
+   *
+   * 这里**显式**把 `"demo"` 与 `isDemo: true` 传给 `finish`，不依赖 state ——
+   * `setState` 在本次执行里还没生效（见 `finish` 的说明）。
+   * 顺带用显式循环替代了原来的 `as AssessmentQuestion` 断言，题目对不上时直接跳过而不是硬转。
+   */
   async function runDemoAnswers() {
+    const demoQuestionnaire = getQuestionnaire("demo");
+    const demoSteps: StepItem[] = [];
+    for (const answer of DEMO_ANSWERS) {
+      const question = demoQuestionnaire.questions.find((item) => item.id === answer.questionId);
+      if (question) demoSteps.push({ question, probe: null, reason: "", answer });
+    }
+
     setMode("demo");
     setDemoFilled(true);
-    const demoSteps: StepItem[] = DEMO_ANSWERS.map((answer) => ({
-      question: getQuestionnaire("demo").questions.find((question) => question.id === answer.questionId) as AssessmentQuestion,
-      probe: null,
-      reason: "",
-      answer,
-    })).filter((step) => Boolean(step.question));
-
     setSteps(demoSteps);
-    await finish(demoSteps);
+    await finish(demoSteps, "demo", true);
   }
 
   /* ----------------------------- 介绍页 ----------------------------- */

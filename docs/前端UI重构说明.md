@@ -34,8 +34,11 @@ hover 反相成黑底白字。**白/黑是主体，黄只在 hover、demo 角标
 
 `src/components/app-shell.tsx`（客户端组件，挂在 `layout.tsx`，全站唯一）。
 
-- **收起时也看得见每个功能的图标**（64px 宽，图标 23px，浅灰 `#a9afb6`）——
+- **收起时也看得见每个功能的图标**（图标栏宽 72px，触屏/≤900px 64px、≤680px 58px；图标 27px，浅灰 `#a9afb6`）——
   之前只留一条 16px 细线，功能完全不可发现，这是 v5 要修的问题。
+- **那一列按钮占图标栏纵高的约 60%**：`.dock-rail-nav` 用 `height: 58%` + `grid-auto-rows: minmax(0, 1fr)`
+  让按钮均分高度（窗口越高越大、越矮越小），`max-height: 680px` 是超高屏的兜底
+  —— 否则 1440p 竖屏上单个按钮会高到 139px，像块广告牌。
 - **选中项 = 浅灰块 + 左侧 3px 黑条**（对齐参考站那套标记），收起态与展开态一致。
 - 三种展开方式：① 鼠标移入左栏（纯 CSS `:hover`）；② 键盘 Tab 进面板内的链接
   （`:focus-within`，所以**面板里的链接始终在 DOM 中、可聚焦**，不能靠 `display` 切换）；
@@ -44,6 +47,16 @@ hover 反相成黑底白字。**白/黑是主体，黄只在 hover、demo 角标
   面板 `z-index: 1`，图标才始终露在外面；面板的左内边距用 `calc(var(--rail) + 14px)` 避开图标栏。
 - 图标栏那一组链接是 `aria-hidden` + `tabIndex={-1}`：它们只是同一批目的地的视觉副本，
   让读屏重复念两遍是噪音；**可访问的那一份在展开面板里**（带 `aria-current`）。
+
+### 菜单最下方：Contact us
+
+`CONTACT_LINK`（在 `nav-items.tsx`）指向项目公开仓库 `https://github.com/Kevin87654/AI-science-research`，
+**刻意不放进 `NAV_ITEMS`** —— 它是站外链接，没有"当前选中"的概念，也不该被算进 01…06 的编号里。
+
+- 收起态：图标栏底部（GitHub 图标，与展开按钮同组，整块贴底）。
+- 展开态：导航之后、页脚小字之前，用一条细线隔开，显示「Contact us / GitHub · 公开仓库 / ↗」。
+- 站外链接一律 `target="_blank" rel="noreferrer noopener"`；图标栏那份同样按视觉副本处理
+  （`aria-hidden` + `tabIndex={-1}`）。
 - 遮罩 `.dock-scrim` 默认 `pointer-events: none`：如果让它接事件，鼠标划过页面会一直停在
   `.dock:hover` 上，菜单关不掉。只有「已固定」状态才允许点击遮罩收起（触屏用）。
 

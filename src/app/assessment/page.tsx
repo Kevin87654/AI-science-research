@@ -14,7 +14,7 @@ export default function AssessmentPage() {
       <main id="main-content" className="container page">
         <AssessmentForm />
       </main>
-      <footer className="container site-footer">科研小助理 · 深圳大学学生团队</footer>
+      <footer className="container site-footer">科研小助理 · 深圳大学酱味大鸡队呈现</footer>
     </>
   );
 }

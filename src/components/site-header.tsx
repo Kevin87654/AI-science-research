@@ -3,42 +3,38 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "成长首页" },
-  { href: "/assessment", label: "科研测评" },
-  { href: "/profile", label: "我的画像" },
-  { href: "/roadmap", label: "学习路线" },
-  // 下面两项由 C 模块加入（资料与问答页面）。放在路线之后，
-  // 因为完整闭环是「测评 → 画像 → 路线 → 找资料 → 提问 → 回首页看进度」。
-  { href: "/resources", label: "教师资料" },
-  { href: "/questions", label: "科研问答" },
-];
+import { NAV_ITEMS } from "./nav-items";
 
+/**
+ * 顶栏。
+ *
+ * 品牌区的 logo 已经在左侧图标栏顶部（和参考站一样把 logo 放在侧栏），
+ * 这里只放「当前所处的功能」+ 一句说明 + 一个主行动按钮，避免同一屏出现两个 logo。
+ */
 export function SiteHeader() {
   const pathname = usePathname();
+  const current = NAV_ITEMS.find((item) => item.href === pathname);
 
   return (
-    <header className="site-header container">
-      <Link className="brand" href="/" aria-label="科研小助理首页">
-        <span className="brand-mark" aria-hidden="true">研</span>
-        科研小助理
-      </Link>
+    <header className="site-header">
+      <div className="header-context">
+        {current ? (
+          <>
+            <span className="crumb">{current.index} / {current.sub}</span>
+            <span className="header-label">{current.label}</span>
+          </>
+        ) : (
+          <span className="header-tagline">从认识科研，到迈出第一步</span>
+        )}
+      </div>
 
-      <nav className="site-nav" aria-label="主导航">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={active ? "site-nav-link site-nav-link-active" : "site-nav-link"}
-              aria-current={active ? "page" : undefined}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="site-header-right">
+        <span className="badge">匿名体验 · 无需注册</span>
+        {/* 测评页自己就有一个「开始测评」大按钮，顶栏再放一个就成了重复入口 */}
+        {pathname === "/assessment" ? null : (
+          <Link className="button button-header" href="/assessment">开始测评</Link>
+        )}
+      </div>
     </header>
   );
 }

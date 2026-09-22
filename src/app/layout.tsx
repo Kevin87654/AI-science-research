@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +12,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="zh-CN">
       <body>
         <a className="skip-link" href="#main-content">跳到正文</a>
-        {children}
+        {/* 背景大图与左侧自动呼出菜单是全站共用的，统一放在外壳里 */}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

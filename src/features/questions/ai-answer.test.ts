@@ -20,6 +20,7 @@ import {
   composeAiAnswer,
   prepareAiInput,
   resolveQaMode,
+  reviewAiDraft,
   validateAiDraft,
 } from "./ai-answer.ts";
 import { answerQuestion } from "./engine.ts";
@@ -97,6 +98,29 @@ test("开关：只有明确写 off 才是关，其他一律算开", () => {
   assert.equal(resolveQaMode(" Off "), "off");
 });
 
+test("证据里的教师名取自「引用了哪些教师来源」，不是 teacherIds", () => {
+  // ⭐ 回归：实测线上 `reason=teacher-outside-evidence(szu-cs-yao-junmei)`。
+  //    「本科生怎么联系导师、进实验室？」走 FAQ 分支 —— 它的 citations 指向教师来源，
+  //    但 `teacherIds` 是**空数组**。旧实现从 teacherIds 推允许集合，于是得到空集，
+  //    模型一提到证据里明明列着的姚俊梅/柴合言，就被判成"提到证据之外的老师"、整条作废。
+  const baseline = baselineOf("本科生怎么联系导师、进实验室？");
+  assert.equal(baseline.teacherIds.length, 0, "FAQ 分支的 teacherIds 应当为空，否则用例失去意义");
+  assert.ok(baseline.citations.length > 0, "但它应当带引用");
+
+  const evidence = collectEvidence(baseline, catalog);
+  assert.ok(evidence.teacherNames.length > 0, "证据里给了老师，允许集合就不能为空");
+
+  // 允许集合与证据文本必须一致：每个名字都要能在文本里找到，且提到它不该被判越界。
+  const sourceIds = baseline.citations.map((source) => source.id);
+  for (const name of evidence.teacherNames) {
+    assert.ok(evidence.text.includes(name), `${name} 应当在证据文本里`);
+    assert.ok(
+      validateAiDraft(draftJson({ answer: `${name} 的研究方向可以看看。`, sourceIds }), evidence, catalog),
+      `${name} 是证据里给出的老师，提到它不该被判越界`,
+    );
+  }
+});
+
 test("证据里不带原始 URL —— URL 只能由来源注册表还原", () => {
   const evidence = collectEvidence(richBaseline, catalog);
   assert.ok(evidence.sourceIds.length > 0);
@@ -155,27 +179,96 @@ test("合法草稿通过校验", () => {
   assert.deepEqual(draft.sourceIds, [richBaseline.citations[0].id]);
 });
 
-test("结构不合法一律拒绝", () => {
+test("模型跑偏 / 越界 → 整条作废", () => {
   const evidence = collectEvidence(richBaseline, catalog);
 
   const cases: Array<[string, string]> = [
     ["不是 JSON", "我觉得张昊迪挺好的。"],
     ["JSON 但是数组", JSON.stringify([{ answer: "x" }])],
     ["status 不在枚举里", draftJson({ status: "sure" })],
+    // answer 是这条回答的全部内容，为空就真没什么可展示了 —— 只能作废。
     ["answer 为空", draftJson({ answer: "   " })],
-    // 长度都跟着 QA_LIMITS 走，改上限时用例自动跟上，不会悄悄失效。
-    ["answer 超长", draftJson({ answer: "x".repeat(QA_LIMITS.answer + 1) })],
     ["actions 不是数组", draftJson({ actions: "打开官网" })],
-    ["actions 过多", draftJson({ actions: Array.from({ length: QA_LIMITS.actions + 1 }, () => "a") })],
-    ["单条 action 超长", draftJson({ actions: ["y".repeat(QA_LIMITS.action + 1)] })],
     ["sourceIds 不是数组", draftJson({ sourceIds: "src-x" })],
-    ["limitation 为空", draftJson({ limitation: "" })],
-    ["limitation 超长", draftJson({ limitation: "z".repeat(QA_LIMITS.limitation + 1) })],
-    ["缺失信息条数过多", draftJson({ missingInformation: Array.from({ length: QA_LIMITS.missingItems + 1 }, () => "a") })],
+    // 病态数量：说明模型压根没按 schema 走，这时候作废比截断安全。
+    ["actions 病态数量", draftJson({ actions: Array.from({ length: 21 }, () => "a") })],
+    ["缺失信息病态数量", draftJson({ missingInformation: Array.from({ length: 21 }, () => "a") })],
+    ["提到证据外的老师", draftJson({ answer: "姚俊梅也在做知识图谱。" })],
   ];
 
   for (const [label, text] of cases) {
     assert.equal(validateAiDraft(text, evidence, catalog), null, `应拒绝：${label}`);
+  }
+});
+
+test("啰嗦 / 漏写 → 修补而不是作废（本轮修正的核心语义）", () => {
+  const evidence = collectEvidence(richBaseline, catalog);
+
+  // 超长：截断保留。丢掉整条回答不划算 —— 实测一次要等 24～63 秒。
+  const longAnswer = reviewAiDraft(draftJson({ answer: "好".repeat(QA_LIMITS.answer + 50) }), evidence, catalog);
+  assert.ok(longAnswer.ok);
+  assert.ok(longAnswer.draft.answer.length <= QA_LIMITS.answer + 1, "应被截到上限附近");
+  assert.ok(longAnswer.repairs.some((r) => r.startsWith("answer-truncated")), "应记一笔修补");
+
+  const longAction = reviewAiDraft(draftJson({ actions: ["动".repeat(QA_LIMITS.action + 50)] }), evidence, catalog);
+  assert.ok(longAction.ok);
+  assert.ok(longAction.repairs.some((r) => r.startsWith("actions-truncated")));
+
+  // 条目多写：取前 N 条，不作废。
+  const manyActions = reviewAiDraft(
+    draftJson({ actions: Array.from({ length: QA_LIMITS.actions + 2 }, () => "做点什么") }),
+    evidence,
+    catalog,
+  );
+  assert.ok(manyActions.ok);
+  assert.equal(manyActions.draft.actions.length, QA_LIMITS.actions);
+  assert.ok(manyActions.repairs.some((r) => r.startsWith("actions-capped")));
+
+  // 数组里混了个空串：丢掉那一条，不作废整条。
+  const emptyItem = reviewAiDraft(draftJson({ actions: ["正常的一条", "   "] }), evidence, catalog);
+  assert.ok(emptyItem.ok);
+  assert.deepEqual(emptyItem.draft.actions, ["正常的一条"]);
+  assert.ok(emptyItem.repairs.some((r) => r.includes("empty-item-dropped")));
+});
+
+test("limitation 漏写 → 补一句诚实的通用说明，而不是丢掉整条回答", () => {
+  const evidence = collectEvidence(richBaseline, catalog);
+  const review = reviewAiDraft(draftJson({ limitation: "" }), evidence, catalog);
+
+  assert.ok(review.ok, "模型漏写一句边界不该让整条回答作废");
+  assert.ok(review.draft.limitation.length > 0, "契约要求 limitation 不得留空");
+  assert.ok(review.repairs.includes("limitation-missing-defaulted"));
+  // 兜底文案必须提醒去官方核实，且不能自称是模型写的边界。
+  assert.match(review.draft.limitation, /官方|本人/);
+});
+
+test("status 大小写 / 空格容错", () => {
+  const evidence = collectEvidence(richBaseline, catalog);
+  for (const raw of ["limited", "Limited", " LIMITED ", "limited\n"]) {
+    const review = reviewAiDraft(draftJson({ status: raw }), evidence, catalog);
+    assert.ok(review.ok, `status=${JSON.stringify(raw)} 应当被接受`);
+    assert.equal(review.draft.status, "limited");
+  }
+});
+
+test("失败必须带原因，且原因能定位到具体规则与字段（队友明确要求）", () => {
+  const evidence = collectEvidence(richBaseline, catalog);
+
+  const cases: Array<[string, string, RegExp]> = [
+    ["不是 JSON", "随便写点什么", /^not-json-object$/],
+    ["status 非法", draftJson({ status: "sure" }), /^status-invalid\(/],
+    ["answer 为空", draftJson({ answer: "" }), /^answer-empty$/],
+    ["sourceId 未知", draftJson({ sourceIds: ["src-made-up"] }), /^unknown-sourceId\(src-made-up\)$/],
+    ["输出含网址", draftJson({ answer: "见 https://x.test" }), /^url-in-answer$/],
+    ["病态数组", draftJson({ actions: Array.from({ length: 21 }, () => "a") }), /^actions-too-many-items\(/],
+  ];
+
+  for (const [label, text, pattern] of cases) {
+    const review = reviewAiDraft(text, evidence, catalog);
+    assert.equal(review.ok, false, `${label} 应当失败`);
+    assert.match(review.reason, pattern, `${label} 的原因应当能定位`);
+    // 原因里不能带模型原文（原文只在 SERVER_AI_DEBUG 时另打）。
+    assert.ok(review.reason.length < 80, "原因应当短而具体");
   }
 });
 

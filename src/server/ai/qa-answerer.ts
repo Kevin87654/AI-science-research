@@ -92,22 +92,29 @@ export function createQaAiAnswerer(
     }
 
     // ④ 校验 + 拼接。`finalizeAiAnswer` 只接受能过全部拒绝规则的输出。
-    const answer = finalizeAiAnswer(result.text, prepared, baseline, catalog);
-    if (!answer) {
-      // 判不出原因会很难查：模型输出与提示词要求不一致是**最常见**的失败，
-      // 而它不报错、只表现为"AI 从不接管"。所以按 B 在 codebuddy.ts 里的同一套约定，
-      // 只在 SERVER_AI_DEBUG=1 时打出原文（默认关闭：模型输出可能带请求上下文）。
+    const outcome = finalizeAiAnswer(result.text, prepared, baseline, catalog);
+    if (!outcome.ok) {
+      // ⚠️ **原因必须打出来。** 最初的实现只打一句"输出未通过校验"，
+      //    结果线上只能确定"被拒了"、定不到哪一条 —— 队友在 Vercel 运行时日志里
+      //    只拿到这句话，只能列 5 条猜测（见《给C-问答AI回落复现-20260922》）。
+      //    而真正原因是 `actions[0]` 92 字超过了当时 80 的上限：一条 reason 就能定位的事。
+      //
+      //    reason 里只有字段名、数字和标识，不含模型原文，所以**可以常开**。
+      console.error(`[ai] 问答降级为规则：输出被拒 reason=${outcome.reason}`);
       if (process.env.SERVER_AI_DEBUG === "1") {
         console.error(
-          `[ai] 模型输出未过校验 len=${result.text.length} text=${JSON.stringify(result.text.slice(0, 800))}`,
+          `[ai] 模型输出原文 len=${result.text.length} text=${JSON.stringify(result.text.slice(0, 800))}`,
         );
-      } else {
-        console.error("[ai] 问答降级为规则：输出未通过校验（加 SERVER_AI_DEBUG=1 看原文）");
       }
       return null;
     }
 
-    console.error(`[ai] 问答由模型回答 耗时=${result.durationMs}ms 引用=${answer.citations.length}`);
-    return answer;
+    if (outcome.repairs.length > 0) {
+      console.error(`[ai] 问答输出已修补：${outcome.repairs.join(",")}`);
+    }
+    console.error(
+      `[ai] 问答由模型回答 耗时=${result.durationMs}ms 引用=${outcome.answer.citations.length}`,
+    );
+    return outcome.answer;
   };
 }

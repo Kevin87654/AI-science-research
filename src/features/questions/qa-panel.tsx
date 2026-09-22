@@ -78,6 +78,28 @@ function CitationList({ citations }: { citations: Source[] }) {
  * FAQ 标题并没有丢：与用户问句不同的时候，它在下面以「对应常见问题」出现，
  * 顺便交代这条回答是从哪条 FAQ 来的。相同时（用户直接点了快捷问题）就不重复显示。
  */
+/**
+ * 把一条行动拆成「能扫读的短句」与「后面的说明」（PRD v3 §4.2-B4）。
+ *
+ * 模型写行动的习惯是「短标题：详细说明」—— 冒号前那部分天然就是一句短标题
+ * （例如「写一封简短自我介绍邮件或当面约谈：说明你的专业…」）。
+ * 我们只是**把它显示得更突出**，不改写、不增删一个字。
+ *
+ * 上限 24 字是有意的：超过就说明这句不是短标题（可能整段都没有分句），
+ * 那就干脆不加粗 —— **加粗一整段等于没加粗**。
+ */
+const LEAD_MAX_LENGTH = 24;
+
+function splitActionLead(action: string): { lead: string; rest: string } {
+  for (const pattern of [/[：:]/, /[。！？]/]) {
+    const at = action.search(pattern);
+    if (at > 0 && at <= LEAD_MAX_LENGTH) {
+      return { lead: action.slice(0, at + 1), rest: action.slice(at + 1) };
+    }
+  }
+  return { lead: "", rest: action };
+}
+
 function AnswerView({
   result,
   askedQuestion,
@@ -123,9 +145,15 @@ function AnswerView({
         <div className="qa-actions">
           <h3 className="qa-subtitle">下一步可以做的事</h3>
           <ul className="bullets">
-            {answer.actions.map((action) => (
-              <li key={action}>{action}</li>
-            ))}
+            {answer.actions.map((action) => {
+              const { lead, rest } = splitActionLead(action);
+              return (
+                <li key={action}>
+                  {lead ? <strong>{lead}</strong> : null}
+                  {rest}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

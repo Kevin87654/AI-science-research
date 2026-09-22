@@ -15,7 +15,7 @@
  * 3. **改前面的答案会让后面的题作废**。自适应提问是按已答内容推出来的，
  *    留着旧的后续问题会得到一个自相矛盾的对话。
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   AssessmentAnswer,
@@ -65,6 +65,32 @@ export function AssessmentForm() {
   /** AI 不可用、已退回规则选题。 */
   const [basicMode, setBasicMode] = useState(false);
   const [demoFilled, setDemoFilled] = useState(false);
+  /**
+   * 等下一题已经等了多少秒（PRD v3 §4.2-B2）。
+   *
+   * 完整版会有 1～2 次 AI 介入来挑下一题。**生产实测 3 次：9.94 / 10.29 / 11.08 秒**
+   * （见《部署与线上验证记录》§4.4）—— 文案按生产写，本机更慢不代表用户会那么慢。
+   * 原先这段等待只有按钮上一句"正在想下一个问题…"，用户不知道要等多久。
+   */
+  const [elapsed, setElapsed] = useState(0);
+
+  /**
+   * 等待计时器。只在 `busy` 期间跑。
+   *
+   * ⚠️ 归零放在 `start()` / `goNext()` 里，**不在 effect 体里同步 `setState`** ——
+   * React 的 lint 规则会拦（会触发级联渲染）。事件处理器才是它该待的地方。
+   * 秒数用时间戳算差值而不是累加：标签页切后台时定时器会被降频，累加会偏慢。
+   */
+  useEffect(() => {
+    if (!busy) return undefined;
+
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [busy]);
 
   const current = steps[cursor];
 
@@ -100,6 +126,7 @@ export function AssessmentForm() {
   async function start() {
     setBusy(true);
     setProblem(null);
+    setElapsed(0);
 
     const first = await requestNextStep([], mode);
 
@@ -171,6 +198,7 @@ export function AssessmentForm() {
 
     setBusy(true);
     setProblem(null);
+    setElapsed(0);
 
     const step = await requestNextStep(steps, mode);
     // 每一步都要刷新进度 —— 只设初值的话进度条会永远停在 0（本轮实测踩到过）。
@@ -415,6 +443,26 @@ export function AssessmentForm() {
         <summary>这一题在了解什么</summary>
         <p className="muted small">{current.reason}</p>
       </details>
+
+      {/*
+        B2（PRD v3 §4.2）：等下一题时给出真实秒数。
+        生产实测出题 3 次 9.94 / 10.29 / 11.08 秒，所以文案写 10～30 秒（留余量）。
+
+        ⚠️ 刻意**不写**"作答已经记下了"：测评中途的作答只在组件 state 里 ——
+        `saveFlow` 只在 `finish()`（测评结束）时调用，**刷新或离开这一页就全丢**。
+        这种情况必须如实告诉用户，不能给一个假的安心。
+      */}
+      {busy ? (
+        <p className="muted small">
+          正在根据你前面的回答挑下一题 —— 通常 10～30 秒，已经等了 {elapsed} 秒。
+          {elapsed >= 20 ? (
+            <span role="status" aria-live="polite">
+              {" "}
+              还在挑，请再稍等。请不要刷新或离开这一页：已经答过的题还没有保存。
+            </span>
+          ) : null}
+        </p>
+      ) : null}
 
       <div className="form-actions">
         <button type="button" className="button" onClick={() => void goNext()} disabled={busy}>

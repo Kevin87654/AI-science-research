@@ -406,8 +406,13 @@ export function AssessmentForm() {
         </button>
       ) : null}
 
+      {/*
+        B6（PRD v3 §4.2）：原来写「为什么问这一题」，外部测试原话是
+        「很好的小栏：不明所以，用户看不懂」—— 折叠栏本身是好设计，
+        但那五个字没说清里面是什么。改成直说这一栏会告诉你什么。
+      */}
       <details className="reason-box">
-        <summary>为什么问这一题</summary>
+        <summary>这一题在了解什么</summary>
         <p className="muted small">{current.reason}</p>
       </details>
 

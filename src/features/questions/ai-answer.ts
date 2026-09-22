@@ -17,16 +17,54 @@
 import type { Answer, Catalog, Knowledge, Source } from "@/contracts";
 
 /* ------------------------------------------------------------------ *
- * 上限：全部是"界面上放不下"的经验值，同时也是对模型输出的硬约束
+ * 上限
+ *
+ * ⚠️ **这几个数字的来历（2026-09-22 实测修正，数字都是量出来的，不是估的）**
+ *
+ * 第一版是拍脑袋定的「界面上放不下」的经验值：answer 600 / action 80 / limitation 200。
+ * 接上真实模型后这条输出被**整条拒掉**，逐字段量过才知道：
+ *
+ *   answer      223 字  vs 旧上限 600   → 通过，余量充足
+ *   actions[0]   92 字  vs 旧上限 80    → ❌ **唯一真正超限的字段**
+ *   limitation  188 字  vs 旧上限 200   → 通过，但只差 12 字，几乎没有余量
+ *   缺失信息     5 条，最长 32 字        → 通过
+ *
+ * 模型没写错 —— 它只是把行动写得具体（带上了"为什么这么做"），
+ * 而 limitation 恰恰是产品**希望它写清楚**的字段（产品红线要求明说覆盖范围）。
+ *
+ * 所以上限的作用要摆正：**防的是跑飞**（模型被对抗输入带成一篇小作文、几十 KB 的响应），
+ * 而不是规定它该写多长。定得太紧等于把"写得更负责"判成失败 —— 而且不报错，
+ * 只表现为"AI 从不接管"，极难查。现在按实测值的数倍留余量。
  * ------------------------------------------------------------------ */
 
-/** 回答正文上限。超过说明模型在写小作文，不是"适合新生的简短回答"。 */
-const MAX_ANSWER_LENGTH = 600;
+/** 回答正文上限。实测一次 223 字。 */
+const MAX_ANSWER_LENGTH = 1200;
 /** 行动条数上限。草案要求 1～3 个具体行动，留一点余量。 */
 const MAX_ACTIONS = 4;
-const MAX_ACTION_LENGTH = 80;
-const MAX_LIMITATION_LENGTH = 200;
-const MAX_MISSING_ITEMS = 5;
+/** 单条行动上限。实测 92 字就撞了旧上限 80。 */
+const MAX_ACTION_LENGTH = 240;
+/** 边界说明上限。实测 188 字，离旧上限 200 只差 12 字。 */
+const MAX_LIMITATION_LENGTH = 600;
+/** 缺失信息条数上限。实测常给到 5 条。 */
+const MAX_MISSING_ITEMS = 8;
+/** 单条缺失信息上限。实测最长 32 字。 */
+const MAX_MISSING_ITEM_LENGTH = 120;
+
+/**
+ * 对外暴露上限，供测试用。
+ *
+ * 放出去是为了让"超长必须被拒"那条用例跟着上限走 ——
+ * 否则改上限时测试会用旧的硬编码长度，**用例会悄悄失去意义**（长度不够就拒不掉，
+ * 但它仍然"通过"了断言的反面，反而暴露成失败……更容易被顺手改松）。
+ */
+export const QA_LIMITS = {
+  answer: MAX_ANSWER_LENGTH,
+  actions: MAX_ACTIONS,
+  action: MAX_ACTION_LENGTH,
+  limitation: MAX_LIMITATION_LENGTH,
+  missingItems: MAX_MISSING_ITEMS,
+  missingItem: MAX_MISSING_ITEM_LENGTH,
+} as const;
 
 const STATUSES: readonly Answer["status"][] = ["supported", "limited", "unknown"];
 
@@ -224,7 +262,11 @@ export function validateAiDraft(
   const sourceIds = readStringArray(rawSourceIds, evidence.sourceIds.length + 1, 64);
   if (sourceIds === null) return null;
 
-  const missingInformation = readStringArray(raw.missingInformation ?? [], MAX_MISSING_ITEMS, 60);
+  const missingInformation = readStringArray(
+    raw.missingInformation ?? [],
+    MAX_MISSING_ITEMS,
+    MAX_MISSING_ITEM_LENGTH,
+  );
   if (missingInformation === null) return null;
 
   const limitation = readString(raw.limitation, MAX_LIMITATION_LENGTH);
@@ -289,9 +331,20 @@ export function composeAiAnswer(
 /**
  * 取一条 AI 回答；任何一环不成立就返回 `null`，由调用方回落到规则回答。
  *
- * 注意 `baseline.citations` 为空时**直接返回 null，不调模型**：没有证据时模型能做的
- * 只有编。这条同时省下了额度 —— 而那些问句（人品、代写、名额、否定意图）
- * 恰好是用户最可能反复试的。
+ * ## 两道闸门，都必须在叫模型之前过
+ *
+ * 1. **`mode === "fallback"` 直接跳过。** 规则层的 fallback 出口是**主动拒绝**：
+ *    问人品、要代写、问名额、否定意图、以及什么都没匹配上。这些是产品红线与范围边界，
+ *    模型不该去"帮忙"绕过它们。
+ *
+ *    ⚠️ 这一条是**实测补上的**：名额分支为了告诉用户"去找官方核实"**故意带了引用**，
+ *    于是它通过了"有引用就调模型"这条闸门 —— 实测白等 **180 秒**才回落，
+ *    模型既帮不上忙（名额本来就不许猜），又烧了额度。
+ *
+ * 2. **`citations` 为空也跳过。** 没有证据时模型能做的只有编。
+ *
+ * 两道合起来的效果：只有"规则层给出了一条有依据的实质性回答"才交给模型去组织语言。
+ * 这既守住了红线，也把绝大多数最容易被人反复试的问句排除在付费调用之外。
  */
 export function prepareAiInput(
   question: string,
@@ -299,6 +352,9 @@ export function prepareAiInput(
   catalog: Catalog,
   knowledge: Knowledge,
 ): { prompt: string; evidence: Evidence; registry: Map<string, Source> } | null {
+  // 闸门 1：规则层主动拒绝的，不要交给模型。
+  if (baseline.mode === "fallback") return null;
+  // 闸门 2：没有证据，模型只能编。
   if (baseline.citations.length === 0) return null;
 
   const evidence = collectEvidence(baseline, catalog);

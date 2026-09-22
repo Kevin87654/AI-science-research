@@ -36,6 +36,25 @@ import { finalizeAiAnswer, prepareAiInput, resolveQaMode } from "@/features/ques
 import { answerQuestion } from "@/features/questions/engine";
 
 import { askText, isAiConfigured } from "./codebuddy";
+import { resolveAiTimeoutMs } from "./config";
+
+/**
+ * 问答链路自己的超时**下限**（毫秒）。
+ *
+ * ⚠️ **实测结论（2026-09-22，本机）**：问答的提示词比测评大得多 ——
+ * 里面带着完整证据块（每位教师的科室、方向、招募说明、邮箱、核对日期）加 7 条硬性要求，
+ * 而测评的提示词只有题目和选项。沿用测评的 60 秒默认值，**实测第一次调用正好在 60.0 秒被截断**
+ * （服务端日志：`超过 60000ms 仍未返回`），随后静默回落规则，用户看到的是"AI 没生效"。
+ *
+ * 所以这里设的是**下限**而不是默认值：`SERVER_AI_TIMEOUT_MS` 调得比它大就听环境变量的，
+ * 调得比它小则不采纳。刻意不让它被调得更短 —— 短了必然降级，那不是"更快"，是"不工作"。
+ * 真要把模型整个关掉，用 `SERVER_AI_QA_MODE=off`。
+ */
+const QA_TIMEOUT_FLOOR_MS = 120_000;
+
+function resolveQaTimeoutMs(): number {
+  return Math.max(resolveAiTimeoutMs(), QA_TIMEOUT_FLOOR_MS);
+}
 
 /**
  * 造一个注入给 `createAiFirstProvider` 的 AI 函数。
@@ -65,8 +84,8 @@ export function createQaAiAnswerer(
       return null;
     }
 
-    // ③ 调模型（唯一适配器是 B 的 askText；超时、并发上限都在那里处理）。
-    const result = await askText(prepared.prompt);
+    // ③ 调模型（唯一适配器是 B 的 askText；并发上限在那里处理，超时按问答的量级传）。
+    const result = await askText(prepared.prompt, { timeoutMs: resolveQaTimeoutMs() });
     if (!result.ok) {
       console.error(`[ai] 问答降级为规则：code=${result.code}`);
       return null;
@@ -75,7 +94,16 @@ export function createQaAiAnswerer(
     // ④ 校验 + 拼接。`finalizeAiAnswer` 只接受能过全部拒绝规则的输出。
     const answer = finalizeAiAnswer(result.text, prepared, baseline, catalog);
     if (!answer) {
-      console.error("[ai] 问答降级为规则：输出未通过校验");
+      // 判不出原因会很难查：模型输出与提示词要求不一致是**最常见**的失败，
+      // 而它不报错、只表现为"AI 从不接管"。所以按 B 在 codebuddy.ts 里的同一套约定，
+      // 只在 SERVER_AI_DEBUG=1 时打出原文（默认关闭：模型输出可能带请求上下文）。
+      if (process.env.SERVER_AI_DEBUG === "1") {
+        console.error(
+          `[ai] 模型输出未过校验 len=${result.text.length} text=${JSON.stringify(result.text.slice(0, 800))}`,
+        );
+      } else {
+        console.error("[ai] 问答降级为规则：输出未通过校验（加 SERVER_AI_DEBUG=1 看原文）");
+      }
       return null;
     }
 

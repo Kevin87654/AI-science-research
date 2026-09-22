@@ -20,7 +20,7 @@
  * 接 AI 那天整个交互层都要重写。现在这样，`decidedBy` 从 `rules` 变成 `ai` 时，
  * 这个组件一行都不用改。
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import type { Answer, QuestionResult, Source } from "@/contracts";
@@ -78,6 +78,28 @@ function CitationList({ citations }: { citations: Source[] }) {
  * FAQ 标题并没有丢：与用户问句不同的时候，它在下面以「对应常见问题」出现，
  * 顺便交代这条回答是从哪条 FAQ 来的。相同时（用户直接点了快捷问题）就不重复显示。
  */
+/**
+ * 把一条行动拆成「能扫读的短句」与「后面的说明」（PRD v3 §4.2-B4）。
+ *
+ * 模型写行动的习惯是「短标题：详细说明」—— 冒号前那部分天然就是一句短标题
+ * （例如「写一封简短自我介绍邮件或当面约谈：说明你的专业…」）。
+ * 我们只是**把它显示得更突出**，不改写、不增删一个字。
+ *
+ * 上限 24 字是有意的：超过就说明这句不是短标题（可能整段都没有分句），
+ * 那就干脆不加粗 —— **加粗一整段等于没加粗**。
+ */
+const LEAD_MAX_LENGTH = 24;
+
+function splitActionLead(action: string): { lead: string; rest: string } {
+  for (const pattern of [/[：:]/, /[。！？]/]) {
+    const at = action.search(pattern);
+    if (at > 0 && at <= LEAD_MAX_LENGTH) {
+      return { lead: action.slice(0, at + 1), rest: action.slice(at + 1) };
+    }
+  }
+  return { lead: "", rest: action };
+}
+
 function AnswerView({
   result,
   askedQuestion,
@@ -123,9 +145,15 @@ function AnswerView({
         <div className="qa-actions">
           <h3 className="qa-subtitle">下一步可以做的事</h3>
           <ul className="bullets">
-            {answer.actions.map((action) => (
-              <li key={action}>{action}</li>
-            ))}
+            {answer.actions.map((action) => {
+              const { lead, rest } = splitActionLead(action);
+              return (
+                <li key={action}>
+                  {lead ? <strong>{lead}</strong> : null}
+                  {rest}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -167,8 +195,36 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
    * 而输入框的内容可能已经被用户改过。所以把"真正问出去的那句"单独记下来。
    */
   const [askedQuestion, setAskedQuestion] = useState<string | null>(null);
+  /**
+   * 提问已经等了多少秒（PRD v3 §4.2-B1）。
+   *
+   * 有证据的提问要调模型，**线上实测 15～32 秒**（生产比本机快，别按本机数字写文案）。
+   * 原先这段等待界面只有一句"查询中…"，用户不知道还要多久，演示时很容易被当成卡死。
+   */
+  const [elapsed, setElapsed] = useState(0);
   /** FAQ 问题原文集合，供回答卡片判断 heading 的来历。 */
   const faqQuestions = new Set(quickQuestions.map((item) => item.question));
+
+  /**
+   * 等待计时器。只在 `busy` 期间跑。
+   *
+   * ⚠️ 不要在 effect 体里同步 `setState` 归零 —— React 的 lint 规则会拦
+   * （"Calling setState synchronously within an effect can trigger cascading renders"）。
+   * 归零放在 `ask()` 里做，那是事件处理器，是它该待的地方。
+   *
+   * 用时间戳算差值而不是每次 +1：标签页切到后台时定时器会被降频，
+   * 累加会明显偏慢，而用户看到的秒数必须是真的。
+   */
+  useEffect(() => {
+    if (!busy) return undefined;
+
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [busy]);
 
   const canSubmit = question.trim().length > 0 && !busy;
 
@@ -178,6 +234,7 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
 
     setBusy(true);
     setProblem(null);
+    setElapsed(0);
 
     // 问答接口要求带会话（下一轮接模型后它就是费用闸门），所以先确保身份存在。
     const session = await ensureSession();
@@ -198,6 +255,26 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
     setResult(response.data);
     setAskedQuestion(trimmed);
   }
+
+  /** 常见问题列表。展开态与折叠态共用同一份，避免两处维护必然漂移。 */
+  const quickList = (
+    <ul className="tag-list">
+      {quickQuestions.map((item) => (
+        <li key={item.id}>
+          <button
+            type="button"
+            className="chip"
+            onClick={() => {
+              setQuestion(item.question);
+              void ask(item.question);
+            }}
+          >
+            {item.question}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className="panel qa-panel">
@@ -234,25 +311,43 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
         </button>
       </form>
 
-      <div className="qa-quick">
-        <p className="small muted">常见问题：</p>
-        <ul className="tag-list">
-          {quickQuestions.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="chip"
-                onClick={() => {
-                  setQuestion(item.question);
-                  void ask(item.question);
-                }}
-              >
-                {item.question}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/*
+        B1（PRD v3 §4.2）：等待期间给出**真实进度**，而不是只有一句"查询中"。
+        耗时按**生产**数字（15～60 秒）—— 本机 24～132 秒只是环境慢，别写进文案。
+
+        ⚠️ **刻意不写"可以先去别的页面看看"**：`result` 只是组件 state、没有任何持久化，
+        离开这一页这次的回答就丢了。PRD 原来那句建议会让用户白等一场。
+        ⚠️ `aria-live` 只放在满 20 秒才出现的那句上：秒数每秒都在变，
+        若整段都算 live region，读屏会每秒播报一次。
+      */}
+      {busy ? (
+        <p className="small muted">
+          正在核对资料并生成回答 —— 通常需要 15～60 秒，已经等了 {elapsed} 秒。
+          {elapsed >= 20 ? (
+            <span role="status" aria-live="polite">
+              {" "}
+              比平时久一些，但还在正常生成。请留在这一页：离开后这次的回答不会保留。
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {/*
+        B3（PRD v3 §4.2）：回答出现后把常见问题**收起来**。
+        原先 12 条 chip 常驻铺满三行，回答出来之后注意力仍被它们分走。
+        不是删掉 —— 想换一个问题的人照样点得到，只是不再占着屏幕。
+      */}
+      {result ? (
+        <details className="qa-quick">
+          <summary className="small muted">换一个常见问题</summary>
+          {quickList}
+        </details>
+      ) : (
+        <div className="qa-quick">
+          <p className="small muted">常见问题：</p>
+          {quickList}
+        </div>
+      )}
 
       {problem && <p className="error-text" role="alert">{problem}</p>}
 

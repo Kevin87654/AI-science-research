@@ -154,6 +154,62 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 /* ===== 无障碍：仅供读屏 ===== */
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
+/* ===== 资料与问答（C 模块）=====
+   约定：这一段**只新增类，不改上面任何已有规则**，避免影响 B 的布局。
+   复用了 .panel / .card / .chip / .tag / .status-pill / .note-input 等公共类。 */
+.teacher-filters { margin: 18px 0 14px; display: grid; gap: 12px; }
+.teacher-search .note-input { width: 100%; min-height: 44px; font-size: 15px; }
+.teacher-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.teacher-toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.teacher-toggle input { accent-color: var(--accent); }
+
+.teacher-list { list-style: none; padding: 0; margin: 12px 0 0; }
+.teacher-card { display: block; }
+.teacher-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.teacher-head .card-title { margin-bottom: 6px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.teacher-meta { font-size: 13px; font-weight: 400; color: var(--muted); }
+.teacher-summary { margin: 0; }
+.teacher-tags { margin-top: 12px; }
+.tag-hit { background: #e8f3ea; border-color: #bcd6c2; color: #1f6b3f; }
+.teacher-reason { margin: 10px 0 0; }
+.teacher-recruit { margin: 8px 0 0; }
+
+.teacher-detail { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.teacher-subtitle { font-size: 13px; color: var(--muted); margin: 16px 0 8px; font-weight: 600; }
+.teacher-detail .teacher-subtitle:first-child { margin-top: 0; }
+.teacher-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.teacher-facts dt { font-size: 12px; color: var(--muted); }
+.teacher-facts dd { margin: 4px 0 0; font-size: 14px; }
+.teacher-pending { margin: 16px 0 0; display: block; }
+.teacher-pending ul { margin: 8px 0 0; }
+.teacher-source { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.teacher-source p { margin: 4px 0 0; }
+.teacher-link-notice { background: #f1f7f2; border: 1px solid #d7e6da; }
+
+.qa-form { display: flex; gap: 10px; margin: 18px 0 12px; }
+.qa-form .note-input { flex: 1; min-width: 0; min-height: 44px; font-size: 15px; }
+.qa-quick { margin-bottom: 18px; }
+.qa-quick p { margin: 0 0 8px; }
+
+.qa-answer { margin-top: 8px; }
+.qa-answer-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.qa-answer-head .card-title { margin-bottom: 0; }
+.qa-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.qa-status-supported { background: #e8f3ea; border-color: #bcd6c2; color: #1f6b3f; }
+.qa-status-limited { background: #fdf3e3; border-color: #f0dcc0; color: #8a5416; }
+.qa-status-unknown { background: #f4f5f2; border-color: var(--line); color: var(--muted); }
+.qa-by-ai { background: #eef2fb; border-color: #c9d6ef; color: #2a4d8f; }
+.qa-text { white-space: pre-line; margin: 16px 0 0; }
+.qa-subtitle { font-size: 13px; color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+.qa-actions, .qa-citations { margin-top: 8px; }
+.qa-citation-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.qa-citation-list li { border-left: 3px solid var(--line); padding-left: 12px; }
+.qa-citation-list p { margin: 4px 0 0; }
+.qa-meta { display: grid; gap: 10px; margin: 18px 0 0; padding-top: 14px; border-top: 1px dashed var(--line); }
+.qa-meta dt { color: var(--muted); }
+.qa-meta dd { margin: 4px 0 0; }
+.qa-inline-link { border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: var(--accent); cursor: pointer; text-decoration: underline; }
+
 @media (max-width: 680px) {
   .container { width: calc(100% - 32px); }
   .site-header { padding-block: 20px; gap: 12px; }
@@ -166,4 +222,14 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   .task { padding: 16px; }
   .note-row { flex-wrap: wrap; }
   .task-head { flex-direction: column; }
+  /* 导航项加到 6 个之后，360px 下品牌名会被挤成两行。
+     让头部换行、导航独占一行，而不是压缩品牌 —— 这是加上 C 的两个入口后才出现的问题。 */
+  .site-header { flex-wrap: wrap; }
+  .site-nav { width: 100%; }
+  /* C 模块的窄屏适配：头部堆叠、事实表改单列、问答输入框换行 */
+  .teacher-head { flex-direction: column; }
+  .teacher-facts { grid-template-columns: 1fr; gap: 10px; }
+  .qa-form { flex-wrap: wrap; }
+  .qa-form .note-input { flex-basis: 100%; }
+  .qa-answer-head { flex-direction: column; }
 }

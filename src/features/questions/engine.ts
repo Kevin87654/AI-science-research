@@ -33,8 +33,12 @@ import {
   unique,
 } from "../resources/catalog.ts";
 
-/** 问题长度上限。超出说明用户把一整段话倒进来了，回答质量无法保证。 */
-const MAX_QUESTION_LENGTH = 500;
+/**
+ * 问题长度上限。超出说明用户把一整段话倒进来了，回答质量无法保证。
+ *
+ * 导出给接口层的入参校验复用 —— 两处各写一个数字，早晚会不一致。
+ */
+export const MAX_QUESTION_LENGTH = 500;
 
 const NO_MATCH_LIMITATION = "未覆盖信息不等于不存在；系统没有进行实时全网检索。";
 

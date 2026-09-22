@@ -51,3 +51,25 @@ export interface Answer {
   /** 这条回答是怎么产生的（规则命中 / 目录检索 / 降级）。 */
   provenance: string;
 }
+
+/**
+ * 问答请求。**不含 `userId`**（铁律 1）：身份只能由服务端从会话解析。
+ */
+export interface QuestionRequest {
+  question: string;
+}
+
+/**
+ * 一条问答结果，外加「谁给出的」。
+ *
+ * 为什么单列 `decidedBy` 而不复用 `Answer.provenance`：`provenance` 是**给人读的散文**，
+ * 措辞随时会改；而界面上的「AI 回答 / 规则回答」角标需要一个不会随文案漂移的取值。
+ * 写法与 B 的 `AssessmentStep.decidedBy` 保持一致。
+ *
+ * 产品红线：**模型给出的回答必须与规则回答在界面上可区分**，
+ * 不能让用户误以为一句模型生成的话也是"已核验资料"。
+ */
+export interface QuestionResult {
+  answer: Answer;
+  decidedBy: "rules" | "ai";
+}

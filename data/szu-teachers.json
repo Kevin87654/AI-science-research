@@ -1,0 +1,652 @@
+{
+  "schemaVersion": "1.0.0",
+  "checkedAt": "2026-09-19",
+  "scope": "深圳大学计算机与软件学院智能服务计算研究中心教师公开资料样本；非全校目录。",
+  "notice": "核验日期指本次阅读官方页面的日期，不是学校更新日期；当前名额一律待确认。",
+  "teachers": [
+    {
+      "id": "szu-cs-chen-junyang",
+      "type": "mentor",
+      "name": "陈俊扬",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "数据挖掘",
+        "推荐系统"
+      ],
+      "summary": "研究重点包括多模态数据条件下的个性化推荐，以及用户兴趣建模。",
+      "publicEmail": "junyangchen@szu.edu.cn",
+      "source": {
+        "id": "src-chen-junyang",
+        "title": "陈俊扬｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1368.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出数据挖掘与推荐服务方向，并描述个性化推荐研究。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail",
+          "recruitment"
+        ]
+      },
+      "recruitment": {
+        "status": "研究生招募说明",
+        "note": "页面提到研究生与博士后招募；本科生参与情况未确认。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-du-wenfeng",
+      "type": "mentor",
+      "name": "杜文峰",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "移动计算",
+        "软件定义网络",
+        "无线网络",
+        "多路径传输"
+      ],
+      "summary": "研究关注移动网络中的传输、带宽利用与服务质量。",
+      "publicEmail": "duwf@szu.edu.cn",
+      "source": {
+        "id": "src-du-wenfeng",
+        "title": "杜文峰｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1251.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出移动计算、软件定义网络等方向及代表论文。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail",
+          "representativeWorks"
+        ]
+      },
+      "recruitment": {
+        "status": "未确认",
+        "note": "本次收录的介绍中未确认本科生招募条件。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [
+        {
+          "title": "基于传输时延预测的多路径并发传输数据分配算法",
+          "year": 2015,
+          "venue": "软件学报",
+          "sourceId": "src-du-wenfeng",
+          "verification": "listed-on-profile",
+          "note": "仅核对教师介绍中的条目，未独立核验出版页面；不代表最新成果。"
+        }
+      ],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-xie-ruitao",
+      "type": "mentor",
+      "name": "谢瑞桃",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "边缘计算",
+        "云计算",
+        "移动计算",
+        "人工智能网络"
+      ],
+      "summary": "公开介绍列出智能云边计算研究组及云、边、移动计算研究。",
+      "publicEmail": "xie@szu.edu.cn",
+      "source": {
+        "id": "src-xie-ruitao",
+        "title": "谢瑞桃｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1248.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面介绍智能云边计算研究组及相关研究方向。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail"
+        ]
+      },
+      "recruitment": {
+        "status": "未确认",
+        "note": "本次收录的介绍中未确认本科生招募条件。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-zhang-haodi",
+      "type": "mentor",
+      "name": "张昊迪",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "人工智能",
+        "知识表示与推理",
+        "深度学习",
+        "自然语言处理",
+        "知识图谱",
+        "问答系统"
+      ],
+      "summary": "研究涉及知识与推理、深度学习，以及对话和问答等应用。",
+      "publicEmail": "hdzhang@szu.edu.cn",
+      "source": {
+        "id": "src-zhang-haodi",
+        "title": "张昊迪｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1247.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出人工智能方向，正文包含知识图谱与问答系统等课题。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail",
+          "recruitment"
+        ]
+      },
+      "recruitment": {
+        "status": "一般加入说明",
+        "note": "页面欢迎了解课题组；未据此确认大一招募名额。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-luo-sheng",
+      "type": "mentor",
+      "name": "罗胜",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "无线网络",
+        "无线通信",
+        "人工智能通信"
+      ],
+      "summary": "研究关注无线通信传输，以及人工智能在通信系统中的应用。",
+      "publicEmail": "sluo@szu.edu.cn",
+      "source": {
+        "id": "src-luo-sheng",
+        "title": "罗胜｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1246.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出无线网络传输，并说明无线通信与人工智能通信研究。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail"
+        ]
+      },
+      "recruitment": {
+        "status": "未确认",
+        "note": "本次收录的介绍中未确认本科生招募条件。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-yao-junmei",
+      "type": "mentor",
+      "name": "姚俊梅",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "物联网",
+        "移动计算"
+      ],
+      "summary": "研究聚焦智能物联网与移动计算，官方介绍包含本科生参与说明。",
+      "publicEmail": "yaojunmei@szu.edu.cn",
+      "source": {
+        "id": "src-yao-junmei",
+        "title": "姚俊梅｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1245.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出智能物联网与移动计算方向，招募文字明确包含本科生。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail",
+          "recruitment"
+        ]
+      },
+      "recruitment": {
+        "status": "页面欢迎本科生",
+        "note": "页面有本科生联系说明，但没有本年度大一名额与截止时间；须本人确认。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-ma-xiaoliang",
+      "type": "mentor",
+      "name": "马晓亮",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "副教授",
+      "directions": [
+        "人工智能",
+        "进化算法",
+        "多目标优化",
+        "大规模优化",
+        "路径优化"
+      ],
+      "summary": "研究关注利用进化计算处理多个目标和大规模优化问题。",
+      "publicEmail": "maxiaoliang@szu.edu.cn",
+      "source": {
+        "id": "src-ma-xiaoliang",
+        "title": "马晓亮｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1404.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出人工智能与优化方向，并列示相关历史论文。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail"
+        ]
+      },
+      "recruitment": {
+        "status": "未确认",
+        "note": "本次收录的介绍中未确认本科生招募条件。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-zhang-yi",
+      "type": "mentor",
+      "name": "张毅",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "助理教授",
+      "directions": [
+        "机器学习",
+        "计算机视觉",
+        "多模态学习",
+        "迁移学习",
+        "具身智能"
+      ],
+      "summary": "研究涉及视觉与语言等多模态信息、迁移学习和视觉推理。",
+      "publicEmail": "rambo.ai@szu.edu.cn",
+      "source": {
+        "id": "src-zhang-yi",
+        "title": "张毅｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1049/1381.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出机器学习与计算机视觉，正文涉及多模态和具身智能。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail",
+          "representativeWorks"
+        ]
+      },
+      "recruitment": {
+        "status": "未确认",
+        "note": "本次收录的介绍中未确认本科生招募条件。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [
+        {
+          "title": "Cross-Modal Few-Shot Learning with Second-Order Neural Ordinary Differential Equations",
+          "year": 2025,
+          "venue": "AAAI",
+          "sourceId": "src-zhang-yi",
+          "verification": "listed-on-profile",
+          "note": "仅核对教师介绍中的条目，未独立核验出版页面；不代表最新成果。"
+        }
+      ],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-zhang-liangjie",
+      "type": "mentor",
+      "name": "张良杰",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "教授（页面正文称特聘教授）",
+      "directions": [
+        "服务计算",
+        "人工智能",
+        "AIGC",
+        "智能体",
+        "互联网软件"
+      ],
+      "summary": "公开介绍涉及服务计算、智能体以及互联网软件和服务架构。",
+      "publicEmail": "zhanglj@szu.edu.cn",
+      "source": {
+        "id": "src-zhang-liangjie",
+        "title": "张良杰｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1039/1028.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面标题为教授，正文称特聘教授；列示服务计算、人工智能和智能体研究。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail"
+        ]
+      },
+      "recruitment": {
+        "status": "未确认",
+        "note": "本次摘要未确认本科生招募条件；请核对完整官网。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    },
+    {
+      "id": "szu-cs-chai-heyan",
+      "type": "mentor",
+      "name": "柴合言",
+      "school": "深圳大学",
+      "college": "计算机与软件学院",
+      "researchUnit": "智能服务计算研究中心",
+      "title": "助理教授",
+      "directions": [
+        "数据挖掘",
+        "人工智能",
+        "信息内容安全",
+        "社交媒体分析"
+      ],
+      "summary": "研究聚焦数据挖掘与信息内容安全，官方介绍包含本科生参与说明。",
+      "publicEmail": "hychai@szu.edu.cn",
+      "source": {
+        "id": "src-chai-heyan",
+        "title": "柴合言｜深圳大学智能服务计算研究中心",
+        "url": "https://aisc.szu.edu.cn/info/1041/1377.htm",
+        "publisher": "深圳大学智能服务计算研究中心",
+        "checkedAt": "2026-09-19",
+        "pageUpdatedAt": null,
+        "verification": "official-page-read",
+        "evidenceSummary": "页面列出研究方向，正文欢迎有动手能力且课余时间充足的本科生。",
+        "supportedFields": [
+          "name",
+          "college",
+          "title",
+          "directions",
+          "summary",
+          "publicEmail",
+          "recruitment",
+          "representativeWorks"
+        ]
+      },
+      "recruitment": {
+        "status": "页面欢迎本科生",
+        "note": "页面欢迎本科生参与，但没有本年度大一名额与截止时间；须本人确认。",
+        "currentAvailability": "unknown"
+      },
+      "representativeWorks": [
+        {
+          "title": "Improving Gradient Trade-offs between Tasks in Multi-task Text Classification",
+          "year": 2023,
+          "venue": "ACL",
+          "sourceId": "src-chai-heyan",
+          "verification": "listed-on-profile",
+          "note": "仅核对教师介绍中的条目，未独立核验出版页面；不代表最新成果。"
+        }
+      ],
+      "editorial": {
+        "suggestedMajors": [
+          "计算机科学与技术",
+          "软件工程",
+          "人工智能"
+        ],
+        "note": "专业标签与入门建议是产品编辑建议，不是老师的招生条件。",
+        "nextSteps": [
+          "打开官方介绍，写下两个想了解的研究关键词。",
+          "选择一篇主页列示成果，先阅读摘要并记录一个问题。",
+          "联系前核实本科生参与机会、先修基础、每周投入与指导方式。"
+        ]
+      },
+      "pendingConfirmation": [
+        "是否接受大一学生参与",
+        "目前是否有名额",
+        "先修能力与时间要求",
+        "当前职称及研究方向是否有更新"
+      ],
+      "isDemo": false
+    }
+  ]
+}

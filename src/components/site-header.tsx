@@ -8,6 +8,10 @@ const NAV_ITEMS = [
   { href: "/assessment", label: "科研测评" },
   { href: "/profile", label: "我的画像" },
   { href: "/roadmap", label: "学习路线" },
+  // 下面两项由 C 模块加入（资料与问答页面）。放在路线之后，
+  // 因为完整闭环是「测评 → 画像 → 路线 → 找资料 → 提问 → 回首页看进度」。
+  { href: "/resources", label: "教师资料" },
+  { href: "/questions", label: "科研问答" },
 ];
 
 export function SiteHeader() {

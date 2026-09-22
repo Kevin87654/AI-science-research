@@ -23,6 +23,26 @@
       "verification": "official-page-read"
     },
     {
+      "id": "szu-lab-entry",
+      "title": "「科研启航，实验逐梦」本科生进实验室宣讲会（电子与信息工程学院）",
+      "url": "https://ceie.szu.edu.cn/info/1056/6582.htm",
+      "publisher": "深圳大学电子与信息工程学院",
+      "evidenceSummary": "学院面向本科生介绍进实验室的路径：本科生可从文献阅读、基础学习、组会参与、数据整理、仿真复现等小任务做起，实验室不要求一开始就掌握科研方法，更看重稳定投入、主动沟通与持续学习；部分实验室要求大二及以上。属该学院一次活动的报道，不是全校统一规定。",
+      "checkedAt": "2026-09-22",
+      "pageUpdatedAt": "2026-06-04",
+      "verification": "official-page-read"
+    },
+    {
+      "id": "szu-innovation-project",
+      "title": "深圳大学大学生创新创业训练计划管理办法（修订）",
+      "url": "https://jwb.szu.edu.cn/info/1358/2013.htm",
+      "publisher": "深圳大学教务部",
+      "evidenceSummary": "校级大创项目的正式办法：创新训练项目由本科生个人或团队在导师指导下完成；项目一般面向二、三年级学生申报；由项目负责人向所在学院（部）提出申请。办法不含各学院当前名额。",
+      "checkedAt": "2026-09-22",
+      "pageUpdatedAt": null,
+      "verification": "official-page-read"
+    },
+    {
       "id": "scholar-help",
       "title": "Google Scholar · Search Help",
       "url": "https://scholar.google.com/intl/zh-CN/scholar/help.html",
@@ -92,7 +112,8 @@
       ],
       "sourceIds": [
         "szu-directory",
-        "mentor-guide"
+        "mentor-guide",
+        "szu-lab-entry"
       ],
       "limit": "建议不构成导师推荐背书。",
       "checkedAt": "2026-09-19",
@@ -114,7 +135,8 @@
         "写下“我感兴趣的原因”和“我还缺的基础”。"
       ],
       "sourceIds": [
-        "mentor-guide"
+        "mentor-guide",
+        "szu-lab-entry"
       ],
       "limit": "标签归一化与匹配理由由产品规则生成。",
       "checkedAt": "2026-09-19",
@@ -138,7 +160,8 @@
       ],
       "sourceIds": [
         "src-yao-junmei",
-        "src-chai-heyan"
+        "src-chai-heyan",
+        "szu-innovation-project"
       ],
       "limit": "这是官网文字的范围说明，不是实时名额查询。",
       "checkedAt": "2026-09-19",
@@ -161,7 +184,8 @@
         "写出一个具体研究问题，检查姓名和公开邮箱后自行发送。"
       ],
       "sourceIds": [
-        "mentor-guide"
+        "mentor-guide",
+        "szu-lab-entry"
       ],
       "limit": "产品提供准备建议，不替用户发送邮件。",
       "checkedAt": "2026-09-19",
@@ -184,7 +208,8 @@
       ],
       "sourceIds": [
         "mentor-guide",
-        "read-paper"
+        "read-paper",
+        "szu-lab-entry"
       ],
       "limit": "阅读卡片是本产品的训练建议，不是学校入组门槛。",
       "checkedAt": "2026-09-19",

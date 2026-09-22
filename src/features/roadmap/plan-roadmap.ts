@@ -53,6 +53,33 @@ const STAGE_PLAN: Array<{ id: string; title: string; description: string; dimens
   },
 ];
 
+/**
+ * 任务 → 已核验来源的**固定映射**（PRD v3 §4.1-A4）。
+ *
+ * 为什么集中放在这里而不是写进每个 `TaskSeed`：
+ * 这样一眼就能看出**哪些来源还没被任何任务用上**（见下方"已知缺口"），
+ * 而不必把八个种子逐个翻一遍。任务本身的文案与这个映射是两件事，改一个不必动另一个。
+ *
+ * ⚠️ **只挂真正契合的来源。** 找不到契合的就留空，界面会整段省略 ——
+ * 硬凑一条关联比不挂更糟：用户会以为那份材料在讲这件事，而它其实没有。
+ *
+ * **已知缺口（留给下一轮补数据，不是代码问题）**：
+ * - `method-basics`「认识三种研究方法」：现有七条来源里没有讲研究方法的
+ * - `goal`「把目标写成一句可判断的话」：没有讲目标拆解的
+ * - 因此 `arxiv-about`、`ccf-directory` 目前**没有被任何任务引用** ——
+ *   它们本身是好的来源（预印本是什么、会议期刊分级），缺的是与之匹配的任务。
+ */
+const RESOURCE_IDS: Record<AbilityDimension | "interest" | "goal", readonly string[]> = {
+  "research-literacy": ["read-paper"],
+  "paper-literacy": ["read-paper"],
+  "information-retrieval": ["szu-library", "scholar-help"],
+  "method-basics": [],
+  "skill-basics": ["read-paper"],
+  "action-experience": ["mentor-guide"],
+  interest: ["szu-directory"],
+  goal: [],
+};
+
 export type PlanRoadmapInput = {
   userId: string;
   /** 依据哪份画像生成，对应 `Roadmap.profileId`。 */
@@ -78,6 +105,7 @@ function toTask(
   id: string,
   stageId: string,
   order: number,
+  resourceIds: readonly string[],
 ): RoadmapTask {
   return {
     id,
@@ -87,8 +115,8 @@ function toTask(
     description: seed.description,
     estimatedMinutes: seed.estimatedMinutes,
     completionCriteria: seed.completionCriteria,
-    // C 的资料接入主工程后再填真实 id；现在留空，界面会优雅降级。
-    resourceIds: [],
+    // 指向 data/ 里已核验的来源 id；界面据此还原标题与链接（URL 不写进路线数据）。
+    resourceIds: [...resourceIds],
     skippable: seed.skippable,
   };
 }
@@ -120,16 +148,28 @@ export function planRoadmap(input: PlanRoadmapInput): Roadmap {
 
     for (const dimension of plan.dimensions) {
       if (!needsWork(scoring, dimension)) continue;
-      stageTasks.push(toTask(DIMENSION_GUIDANCE[dimension].task, taskIdOf(dimension), plan.id, stageTasks.length + 1));
+      stageTasks.push(
+        toTask(
+          DIMENSION_GUIDANCE[dimension].task,
+          taskIdOf(dimension),
+          plan.id,
+          stageTasks.length + 1,
+          RESOURCE_IDS[dimension],
+        ),
+      );
     }
 
     // 兴趣探索任务挂在「动手练一次」阶段：它同样是"做一件具体的事"。
     if (plan.id === STAGE_PRACTICE) {
-      stageTasks.push(toTask(INTEREST_TASK, INTEREST_TASK_ID, plan.id, stageTasks.length + 1));
+      stageTasks.push(
+        toTask(INTEREST_TASK, INTEREST_TASK_ID, plan.id, stageTasks.length + 1, RESOURCE_IDS.interest),
+      );
     }
 
     if (plan.id === STAGE_ACTION) {
-      stageTasks.push(toTask(GOAL_TASK, GOAL_TASK_ID, plan.id, stageTasks.length + 1));
+      stageTasks.push(
+        toTask(GOAL_TASK, GOAL_TASK_ID, plan.id, stageTasks.length + 1, RESOURCE_IDS.goal),
+      );
     }
 
     if (stageTasks.length === 0) continue;

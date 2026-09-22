@@ -67,13 +67,48 @@ function CitationList({ citations }: { citations: Source[] }) {
   );
 }
 
-function AnswerView({ result }: { result: QuestionResult }) {
+/**
+ * 回答卡片。
+ *
+ * 标题用**用户实际问的那句**，不是引擎给的 `heading`（PRD v3 §4.1-A5）。
+ * 原先直接用 `answer.heading`，于是问「本科生怎么联系导师」会显示
+ * 「第一次联系导师怎么准备？」—— 那条 heading 其实是命中的 FAQ 标题，
+ * 用户会觉得答非所问。
+ *
+ * FAQ 标题并没有丢：与用户问句不同的时候，它在下面以「对应常见问题」出现，
+ * 顺便交代这条回答是从哪条 FAQ 来的。相同时（用户直接点了快捷问题）就不重复显示。
+ */
+function AnswerView({
+  result,
+  askedQuestion,
+  faqQuestions,
+}: {
+  result: QuestionResult;
+  askedQuestion: string | null;
+  /** 已知的 FAQ 问题原文，用来判断 `heading` 是不是真的来自某条 FAQ。 */
+  faqQuestions: ReadonlySet<string>;
+}) {
   const { answer, decidedBy } = result;
+
+  const heading = askedQuestion?.trim() || answer.heading;
+  /**
+   * ⚠️ **只有 heading 真是某条 FAQ 的问题时，才标注"对应常见问题"。**
+   *
+   * 引擎的 `heading` 有六种取值，只有一种是 FAQ 标题（`heading: faq.question`），
+   * 其余是「需要进一步确认」「可进一步了解的教师」「公开联系信息」这类**段落标题**。
+   * 不加这个判断的话，兜底回答上会冒出一句「对应常见问题：需要进一步确认」——
+   * 把一个状态当成了用户问过的问题，比原来的问题更糟。
+   */
+  const sourceFaq =
+    askedQuestion && heading !== answer.heading && faqQuestions.has(answer.heading) ? answer.heading : null;
 
   return (
     <article className="card qa-answer" aria-live="polite">
       <div className="qa-answer-head">
-        <h2 className="card-title">{answer.heading}</h2>
+        <div>
+          <h2 className="card-title">{heading}</h2>
+          {sourceFaq ? <p className="muted small">对应常见问题：{sourceFaq}</p> : null}
+        </div>
         <div className="qa-badges">
           <span className={`status-pill qa-status-${answer.status}`}>{STATUS_LABEL[answer.status]}</span>
           <span className={decidedBy === "ai" ? "status-pill qa-by-ai" : "status-pill"}>
@@ -125,6 +160,15 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [result, setResult] = useState<QuestionResult | null>(null);
+  /**
+   * **实际提交出去的那一句**（PRD v3 §4.1-A5）。
+   *
+   * 不能拿输入框里的 `question` 当标题：点快捷问题时 `ask()` 传的是 FAQ 原话，
+   * 而输入框的内容可能已经被用户改过。所以把"真正问出去的那句"单独记下来。
+   */
+  const [askedQuestion, setAskedQuestion] = useState<string | null>(null);
+  /** FAQ 问题原文集合，供回答卡片判断 heading 的来历。 */
+  const faqQuestions = new Set(quickQuestions.map((item) => item.question));
 
   const canSubmit = question.trim().length > 0 && !busy;
 
@@ -152,6 +196,7 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
     }
 
     setResult(response.data);
+    setAskedQuestion(trimmed);
   }
 
   return (
@@ -212,7 +257,7 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
       {problem && <p className="error-text" role="alert">{problem}</p>}
 
       {result ? (
-        <AnswerView result={result} />
+        <AnswerView result={result} askedQuestion={askedQuestion} faqQuestions={faqQuestions} />
       ) : (
         !busy && (
           <div className="card card-quiet">

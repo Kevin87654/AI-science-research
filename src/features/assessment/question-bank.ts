@@ -208,10 +208,21 @@ const QUESTION_SEEDS: QuestionSeed[] = [
   {
     id: "q-exp-activity",
     dimension: "action-experience",
-    prompt: "和科研有关的活动，你参加过哪些？",
+    prompt: "和科研有关的活动，你已经做到哪一档？（参加过多项就选最深的那一档）",
     type: "single",
     level: "deepen",
     inDemo: false,
+    /*
+     * ⚠️ **保持单选。** 原题干是「你参加过哪些？」，问的是复数、题型却是单选，
+     * 于是"听过讲座 + 参加过竞赛"的人只能选一项，**最多的一段经历被丢掉、分数被低估**
+     * （PRD v3 §4.1-A6，来自外部测试反馈）。
+     *
+     * 为什么不干脆改成 `type: "multi"`：`scoreOfQuestion` 对多选**取平均**
+     * （见 `scoring.ts`），意味着选项选得越多分越低 ——
+     * 竞赛(2) + 实验室(3) 平均 2.5，反而低于"只进过实验室"的 3 分。
+     * 那会把"经历更丰富"判成"能力更弱"，比现在的措辞问题严重得多。
+     * 真要改成多选，得先让能力类题目**取最高档而不是平均**。
+     */
     options: [
       { id: "act-none", label: "还没参加过", score: 0 },
       { id: "act-talk", label: "听过讲座或学长学姐的分享", score: 1 },

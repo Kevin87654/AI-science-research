@@ -10,14 +10,12 @@ export const dynamic = "force-dynamic";
 /**
  * 科研问答（C 模块）。
  *
- * 回答来自 `@/server/resources/qa-provider` —— 现阶段是**规则实现**（纯本地、不联网、
- * 不会超时），下一轮会变成"AI 优先 + 规则兜底"。调用方通过返回的 `decidedBy`
- * 如实标注这条回答是谁给的。
+ * 回答由 `@/server/resources/qa-provider` 给出：**AI 优先、规则兜底**。
+ * 返回体里带着 `decidedBy`，由 provider 的每条回答自己声明 —— 界面据此如实标注
+ * "模型生成 / 规则回答"，而不是从 provider 的静态类型去猜。
  *
  * ⚠️ **必须带会话**。理由与 `/api/assessment/next` 相同，而且更硬：
- * 这条链路马上要接付费模型，匿名开放等于把密钥额度公开在互联网上。
- * 现状是规则回答不花钱，但**门槛现在就立起来**比事后补更安全 ——
- * 否则接 AI 那天会忘记加，而且没有测试会失败来提醒。
+ * 这条链路会调用付费模型，匿名开放等于把密钥额度公开在互联网上。
  *
  * 身份只从服务端会话解析；请求体里的任何身份字段都不采信（契约铁律 1）。
  */
@@ -42,13 +40,7 @@ export async function POST(request: Request) {
       return jsonError("BAD_REQUEST", "问题格式不正确，请提交纯文本 question 字段。");
     }
 
-    const provider = createQaProvider();
-    const answer = await provider.answer(question);
-
-    return jsonOk<QuestionResult>({
-      answer,
-      decidedBy: provider.kind === "curated-rules" ? "rules" : "ai",
-    });
+    return jsonOk<QuestionResult>(await createQaProvider().answer(question));
   } catch (error) {
     return toErrorResponse(error);
   }

@@ -190,7 +190,15 @@ const QUESTION_SEEDS: QuestionSeed[] = [
     level: "core",
     inDemo: true,
     options: [
-      { id: "code-course", label: "上过课，跟着写过一点", score: 1 },
+      /*
+       * PRD §4.3.1 缺口一：档位 1 原来只写「上过课，跟着写过一点」——
+       * 一个「用 AI 帮忙写出能跑的程序、但还不敢说自己独立完成」的学生落不进这一档，
+       * 会被这句话说轻（而档位 <2 就不会触发这个维度的深入题，也更容易被排进过基础的路线）。
+       *
+       * **只放宽措辞，不加分数、不加选项**：这个维度测的是**能否独立完成**，
+       * 「独立」二字是有意义的区分，不该被稀释。
+       */
+      { id: "code-course", label: "上过课、跟着写过一点（含借助 AI 帮忙）", score: 1 },
       { id: "code-homework", label: "能独立完成课程作业", score: 2 },
       { id: "code-project", label: "能独立做一个小项目", score: 3 },
     ],

@@ -153,6 +153,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .dock:hover { width: var(--dock-w); }
 .dock:has(:focus-visible) { width: var(--dock-w); }
 
+/*
+  C3（PRD §4.6）：**移动端补一个展开入口**。
+  上面两条对触屏都不起作用 —— 手指没有 hover，键盘那套 `:focus-visible` 也用不上，
+  所以 B 在《前端UI重构说明》里写明「代价：触屏没有 hover，移动端目前没有展开入口」。
+
+  这里只在「设备没有 hover 能力」时补 `:focus-within`：
+  手指点一下左栏里的图标 → 那个链接拿到焦点 → 菜单展开；点别处失焦 → 收起。
+  ⚠️ **刻意写在 `@media (hover: none)` 里**，所以**不会**把桌面上那个
+  「鼠标移开菜单不收」的老问题带回来（那个问题由上面 `:focus-visible` 那条负责）。
+  用 `@media (hover: none)` 而不是 `@media (max-width: …)`：判断依据是**输入方式**，
+  不是屏幕宽度 —— 触屏笔记本、带鼠标的平板都不会被误伤。
+*/
+@media (hover: none) {
+  .dock:focus-within { width: var(--dock-w); }
+}
+
 .dock-inner {
   width: var(--dock-w); height: 100%;
   display: flex; flex-direction: column; gap: 16px;

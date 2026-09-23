@@ -28,7 +28,7 @@ import { sourceFreshness } from "@/features/resources/catalog";
 import { ensureSession, postJson } from "@/features/shared/api-client";
 import { formatDateTime } from "@/features/shared/format";
 import { saveQaLast } from "@/features/shared/local-session";
-import { useIsClient } from "@/features/shared/use-local-flow";
+import { useIsClient, useLocalFlow } from "@/features/shared/use-local-flow";
 import { useQaLast } from "@/features/shared/use-local-session";
 
 /** 快捷问题：直接取 FAQ 的问题文本，避免在界面上再维护一份。 */
@@ -221,6 +221,14 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
    */
   const isClient = useIsClient();
   const storedQa = useQaLast();
+  /**
+   * 流程是不是"演示数据"（PRD §4.3 第 3 条）。
+   *
+   * 演示模式下另外四页（dashboard / profile / roadmap / resources）都有「演示数据」角标，
+   * **`/questions` 与 `/assessment` 原来没有** —— 用户在演示模式下提问，
+   * 回答里没有任何"这是演示"的提示，容易被当成真实结论。这里补齐。
+   */
+  const flow = useLocalFlow();
   const shownResult = result ?? (isClient ? (storedQa?.result ?? null) : null);
   const shownQuestion = result ? askedQuestion : isClient ? (storedQa?.question ?? null) : null;
 
@@ -307,6 +315,7 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
             而不是编一个听起来合理的答案。
           </p>
         </div>
+        {isClient && flow?.isDemo ? <span className="badge badge-demo">演示数据</span> : null}
       </header>
 
       <form

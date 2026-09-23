@@ -26,6 +26,10 @@ import Link from "next/link";
 import type { Answer, QuestionResult, Source } from "@/contracts";
 import { sourceFreshness } from "@/features/resources/catalog";
 import { ensureSession, postJson } from "@/features/shared/api-client";
+import { formatDateTime } from "@/features/shared/format";
+import { saveQaLast } from "@/features/shared/local-session";
+import { useIsClient } from "@/features/shared/use-local-flow";
+import { useQaLast } from "@/features/shared/use-local-session";
 
 /** 快捷问题：直接取 FAQ 的问题文本，避免在界面上再维护一份。 */
 export type QuickQuestion = {
@@ -206,6 +210,21 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
   const faqQuestions = new Set(quickQuestions.map((item) => item.question));
 
   /**
+   * 最近一次问答的本地存档（PRD §4.6 的 C2）。
+   *
+   * 用户等 15～30 秒拿到一条回答，切个页面回来就没了 —— 那是真实的数据丢失。
+   *
+   * ⚠️ 这里**不去"设 state 恢复"**：`useEffect(() => setResult(load()), [])` 是在副作用里
+   * 同步改状态，会被 React 的 lint 规则拦下（本项目已经踩过）。改成把它当作
+   * **本地 state 的回落值** —— 用户刚问的那条优先，没有才显示上次存下的。
+   * `useIsClient()` 挡首屏：服务端没有 localStorage，不挡会先闪一下空状态。
+   */
+  const isClient = useIsClient();
+  const storedQa = useQaLast();
+  const shownResult = result ?? (isClient ? (storedQa?.result ?? null) : null);
+  const shownQuestion = result ? askedQuestion : isClient ? (storedQa?.question ?? null) : null;
+
+  /**
    * 等待计时器。只在 `busy` 期间跑。
    *
    * ⚠️ 不要在 effect 体里同步 `setState` 归零 —— React 的 lint 规则会拦
@@ -254,6 +273,8 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
 
     setResult(response.data);
     setAskedQuestion(trimmed);
+    // C2：存一份。用户切去别的页面再回来，这条回答还在。
+    saveQaLast(trimmed, response.data);
   }
 
   /** 常见问题列表。展开态与折叠态共用同一份，避免两处维护必然漂移。 */
@@ -315,8 +336,13 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
         B1（PRD v3 §4.2）：等待期间给出**真实进度**，而不是只有一句"查询中"。
         耗时按**生产**数字（15～60 秒）—— 本机 24～132 秒只是环境慢，别写进文案。
 
-        ⚠️ **刻意不写"可以先去别的页面看看"**：`result` 只是组件 state、没有任何持久化，
-        离开这一页这次的回答就丢了。PRD 原来那句建议会让用户白等一场。
+        这段文案上有一段沿革，值得留着：
+        - B1 刚做时**刻意不写**"可以先去别的页面看看"—— 当时 `result` 只是组件 state、
+          没有任何持久化，离开这一页这次的回答就丢了，PRD 那句原建议会让用户白等一场。
+        - **C2 落地后这句变成真的了**：请求不会因为组件卸载而中断，
+          生成完成后 `saveQaLast` 照常写入本地；回来时由 `shownResult` 回落显示。
+          所以现在可以如实告诉用户可以走开 —— 而不是继续请人守着屏幕。
+
         ⚠️ `aria-live` 只放在满 20 秒才出现的那句上：秒数每秒都在变，
         若整段都算 live region，读屏会每秒播报一次。
       */}
@@ -326,7 +352,7 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
           {elapsed >= 20 ? (
             <span role="status" aria-live="polite">
               {" "}
-              比平时久一些，但还在正常生成。请留在这一页：离开后这次的回答不会保留。
+              比平时久一些，但还在正常生成。可以先去做别的，生成完会自动留在这里。
             </span>
           ) : null}
         </p>
@@ -337,7 +363,7 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
         原先 12 条 chip 常驻铺满三行，回答出来之后注意力仍被它们分走。
         不是删掉 —— 想换一个问题的人照样点得到，只是不再占着屏幕。
       */}
-      {result ? (
+      {shownResult ? (
         <details className="qa-quick">
           <summary className="small muted">换一个常见问题</summary>
           {quickList}
@@ -351,8 +377,16 @@ export function QaPanel({ quickQuestions }: { quickQuestions: QuickQuestion[] })
 
       {problem && <p className="error-text" role="alert">{problem}</p>}
 
-      {result ? (
-        <AnswerView result={result} askedQuestion={askedQuestion} faqQuestions={faqQuestions} />
+      {/*
+        这条是从本地存档回落出来的（C2），**不是刚问的** —— 要说明来历，
+        否则用户会以为自己刚问过一条自己都不记得的问题。
+      */}
+      {!result && shownResult && storedQa ? (
+        <p className="small muted">上次问的（{formatDateTime(storedQa.savedAt)}）</p>
+      ) : null}
+
+      {shownResult ? (
+        <AnswerView result={shownResult} askedQuestion={shownQuestion} faqQuestions={faqQuestions} />
       ) : (
         !busy && (
           <div className="card card-quiet">

@@ -237,6 +237,16 @@ export function RoadmapBoard({ sources }: { sources: readonly Source[] }) {
         <p className="muted small">
           已完成 {completedCount} / {roadmap.tasks.length} 项
         </p>
+        {/*
+          PRD §4.3 第 4 条的排查结论：勾选进度**只存在服务端**、按匿名身份归属。
+          而匿名身份有 30 天有效期，过期后客户端会自动建一个新身份（`ensureSession`），
+          于是**进度会静默从零开始**，界面上不报错 —— 用户只会看到"勾选全没了"。
+          这里先把归属方式说清楚，免得被当成 bug。画像与路线在本地，不受影响。
+        */}
+        <p className="muted small">
+          勾选进度保存在服务端、按匿名身份归属：换设备或匿名身份过期（30 天）后会从零开始。
+          你的画像与学习路线存在本地，不会因此丢失。
+        </p>
       </div>
 
       {progressError ? (

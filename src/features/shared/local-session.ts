@@ -71,7 +71,17 @@ function createStore<T extends { savedAt: string }>(
   validate: (value: unknown) => value is T,
 ) {
   const listeners = new Set<Listener>();
-  let cachedRaw: string | null = null;
+  /**
+   * 缓存哨兵。
+   *
+   * ⚠️ **这里必须是 `undefined`（= 没有缓存），不能用 `null`。**
+   * `null` 同时表示"读到的原始值是空"，两者撞在一起会出真事故：
+   * 清空存储时 `emitChange()` 把哨兵设成 `null`，而清空后 `readRaw()` 也返回 `null`，
+   * 于是 `raw === cachedRaw` 短路成立，**返回的还是清空之前那份过期数据** ——
+   * 界面上表现为"草稿已经删了，但提示还挂在那里"。
+   * （本轮实测抓到过：点「重新开始」后 localStorage 已空，提示却还在。）
+   */
+  let cachedRaw: string | null | undefined;
   let cachedValue: T | null = null;
 
   function readRaw(): string | null {
@@ -86,7 +96,7 @@ function createStore<T extends { savedAt: string }>(
 
   function getSnapshot(): T | null {
     const raw = readRaw();
-    if (raw === cachedRaw) return cachedValue;
+    if (cachedRaw !== undefined && raw === cachedRaw) return cachedValue;
 
     cachedRaw = raw;
     cachedValue = null;
@@ -126,7 +136,8 @@ function createStore<T extends { savedAt: string }>(
   }
 
   function emitChange(): void {
-    cachedRaw = null;
+    // 设回 `undefined` 而不是 `null` —— 见 `cachedRaw` 上面的说明。
+    cachedRaw = undefined;
     for (const listener of listeners) listener();
   }
 

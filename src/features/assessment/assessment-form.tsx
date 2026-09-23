@@ -15,7 +15,7 @@
  * 3. **改前面的答案会让后面的题作废**。自适应提问是按已答内容推出来的，
  *    留着旧的后续问题会得到一个自相矛盾的对话。
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   AssessmentAnswer,
@@ -26,7 +26,11 @@ import type {
 } from "@/contracts";
 import { buildProfile } from "@/features/profile/build-profile";
 import { ensureSession, postJson } from "@/features/shared/api-client";
+import { formatDateTime } from "@/features/shared/format";
 import { buildFlow, saveFlow } from "@/features/shared/local-bridge";
+import { clearDraft, saveDraft } from "@/features/shared/local-session";
+import { useIsClient } from "@/features/shared/use-local-flow";
+import { useAssessmentDraft } from "@/features/shared/use-local-session";
 import { planNextQuestion } from "./next-question";
 import { DEMO_ANSWERS, getQuestionnaire } from "./question-bank";
 import { buildSubmission, scoreAssessment } from "./scoring";
@@ -91,6 +95,52 @@ export function AssessmentForm() {
 
     return () => window.clearInterval(timer);
   }, [busy]);
+
+  /**
+   * 没答完的测评草稿（PRD §4.6 的 C1）。
+   *
+   * 一个 2～4 分钟的测评，刷新或误点离开就全丢了、还没法续做 —— 那是真实的数据丢失。
+   * 这里读草稿只为了问一句"要不要接着上次答"，**不自动恢复**：
+   * 用户该知道自己接上的是哪一条，而不是莫名其妙地出现在第 7 题。
+   * `useIsClient()` 挡首屏 —— 服务端没有 localStorage，不挡会把"服务端没数据"渲染成"没有草稿"。
+   */
+  const isClient = useIsClient();
+  const draft = useAssessmentDraft();
+
+  /**
+   * 测评是否已经结束。用来关掉下面那个存草稿的 effect ——
+   * 否则 `finish()` 清掉草稿之后，页面在跳转前还可能再渲染一次，把刚清掉的草稿又写回去。
+   */
+  const finishedRef = useRef(false);
+
+  /**
+   * 每答一题就把草稿写回本地。
+   *
+   * ⚠️ 不能写在 `setSteps` 的更新函数里：那个函数在严格模式下会执行两次，
+   * 副作用放进去会被重复触发。写外部存储本来就是 effect 该干的事。
+   */
+  useEffect(() => {
+    if (finishedRef.current) return;
+    if (phase !== "asking" || steps.length === 0) return;
+    saveDraft({ mode, steps, cursor, basicMode });
+  }, [phase, mode, steps, cursor, basicMode]);
+
+  /** 接着上次答（C1）。只有通过结构校验的草稿才会被读到。 */
+  function resumeDraft() {
+    if (!draft) return;
+    setMode(draft.mode);
+    setSteps(draft.steps);
+    setCursor(draft.cursor);
+    setBasicMode(draft.basicMode);
+    setProblem(null);
+    setPhase("asking");
+  }
+
+  /** 重新开始：先清草稿 —— 否则它会一直留在介绍页问"要不要接着答"。 */
+  function startOver() {
+    clearDraft();
+    reset(mode);
+  }
 
   const current = steps[cursor];
 
@@ -253,9 +303,17 @@ export function AssessmentForm() {
 
     if (!saved.ok) {
       setProblem(saved.message);
+      // 保存失败就**不清草稿** —— 用户重试或刷新时还能接着答，不至于白做一场。
       return;
     }
 
+    /*
+     * C1：测评到这一步就结束了，草稿不该再留着 ——
+     * 否则用户下次进测评页会被问一句"要不要接着上次答"，而他上次其实答完了。
+     * `finishedRef` 同时关掉上面那个存草稿的 effect，避免跳转前又把它写回去。
+     */
+    finishedRef.current = true;
+    clearDraft();
     router.push("/profile");
   }
 
@@ -295,8 +353,31 @@ export function AssessmentForm() {
           </div>
         </div>
 
-        <article className="card">
-          <h2 className="card-title">会聊到这些方面</h2>
+          {/*
+            C1（PRD §4.6）：上次没答完就问一句。
+            放在最上面 —— 要接着答的人第一眼就该看到，而不是往下翻过一整页说明。
+          */}
+          {isClient && draft ? (
+            <article className="card card-highlight">
+              <h2 className="card-title">上次的测评还没答完</h2>
+              <p className="muted small">
+                上次答到第 {draft.cursor + 1} 题，已经答了{" "}
+                {draft.steps.filter((step) => step.answer !== null).length} 题（
+                {formatDateTime(draft.savedAt)}）。接着答就从那里继续，不用重来。
+              </p>
+              <div className="form-actions">
+                <button type="button" className="button" onClick={resumeDraft}>
+                  接着上次答
+                </button>
+                <button type="button" className="button-ghost" onClick={startOver}>
+                  重新开始
+                </button>
+              </div>
+            </article>
+          ) : null}
+
+          <article className="card">
+            <h2 className="card-title">会聊到这些方面</h2>
           <ul className="bullets">
             <li>你对「科研在做什么」的当前印象</li>
             <li>论文、检索、研究方法接触到哪一步</li>
@@ -448,9 +529,11 @@ export function AssessmentForm() {
         B2（PRD v3 §4.2）：等下一题时给出真实秒数。
         生产实测出题 3 次 9.94 / 10.29 / 11.08 秒，所以文案写 10～30 秒（留余量）。
 
-        ⚠️ 刻意**不写**"作答已经记下了"：测评中途的作答只在组件 state 里 ——
-        `saveFlow` 只在 `finish()`（测评结束）时调用，**刷新或离开这一页就全丢**。
-        这种情况必须如实告诉用户，不能给一个假的安心。
+        这段文案同样有一段沿革：
+        - B2 刚做时**刻意不写**"作答已经记下了"—— 那时作答只在组件 state 里，
+          `saveFlow` 要到 `finish()` 才调用，刷新或离开就全丢。如实提醒用户才对。
+        - **C1 落地后可以如实说"会留着"了**：每答一题都写进本地草稿，
+          回来时介绍页会问"要不要接着上次答"。所以现在既不骗人、也不用再让人守着屏幕。
       */}
       {busy ? (
         <p className="muted small">
@@ -458,7 +541,7 @@ export function AssessmentForm() {
           {elapsed >= 20 ? (
             <span role="status" aria-live="polite">
               {" "}
-              还在挑，请再稍等。请不要刷新或离开这一页：已经答过的题还没有保存。
+              还在挑，请再稍等。已经答过的题会留着 —— 要是先去做别的，回来接着答就行。
             </span>
           ) : null}
         </p>

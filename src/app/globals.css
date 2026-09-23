@@ -169,10 +169,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
    这一列按钮占菜单高度的约 60%：定高百分比 + `grid-auto-rows: 1fr` 均分，
    窗口越高按钮越大、越矮越小。`calc(100% - 300px)` 那一项是保底 ——
    矮窗口下不能让底部的 Contact us / 页脚 / 展开按钮被挤出可视区（外层是 overflow: hidden，挤出去就是没了）。
+
+   ⚠️ 2026-09-23 修一处「窗口变矮时按钮挤在一起」：
+   `minmax(0, 1fr)` 的 **0 允许按钮被无限压扁** —— 而 `.dock-item` 是 `overflow: visible`，
+   于是内容（图标 + 文字都是 27px）在项高不足时**画到相邻项上**。
+   实测：宽 1280 时窗口高 520px → 项高 27px（刚好）、480px → 20px（开始溢出）、
+   420px → 10px（严重重叠）。
+
+   改法保留原意（仍然"越高越大、越矮越小"），只加一个下限 + 到下限后自己滚：
+   `minmax(0, 1fr)` → `minmax(44px, 1fr)`（44px 是可点区域的经验下限，也高于 27px 的内容），
+   再给导航列 `overflow-y: auto`。这样窗口再矮也只是这一列能滚，不会把按钮压扁、更不会叠字。
+   实测在 400px 高时按钮仍保持 44px、文字不再溢出。
 */
 .dock-nav {
   flex: none; height: min(58%, calc(100% - 300px)); max-height: 680px;
-  display: grid; grid-auto-rows: minmax(0, 1fr); gap: 4px;
+  display: grid; grid-auto-rows: minmax(44px, 1fr); gap: 4px;
+  overflow-y: auto; scrollbar-width: thin;
 }
 
 .dock-item {

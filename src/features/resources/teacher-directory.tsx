@@ -19,6 +19,7 @@
  * 用户可以关掉这个联动，回到纯手动的检索。
  */
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 import type { Catalog, Match } from "@/contracts";
 import { useIsClient, useLocalFlow } from "@/features/shared/use-local-flow";
@@ -213,6 +214,26 @@ export function TeacherDirectory({ catalog }: { catalog: Catalog }) {
           <button type="button" className="button-ghost" onClick={() => setLinkProfile((on) => !on)}>
             {linkProfile ? "不看画像，纯手动筛选" : "按我的画像筛选"}
           </button>
+        </div>
+      )}
+
+      {/*
+        引导优化 D：上面那一块原来**只在"有画像"时渲染** ——
+        而第一次来的人恰恰最需要它（他会先看到一堵 30 多个方向词的墙，不知道从哪看起）。
+        补一个空状态分支，把"做完测评之后这页会做什么"说到位。
+
+        ⚠️ 措辞必须与上面那句一致、只说页面**本来就会做**的事（按兴趣方向高亮命中条目）——
+        不能为了鼓励人做测评去承诺一个还没实现的能力。
+      */}
+      {isClient && profileInterests.length === 0 && (
+        <div className="notice teacher-link-notice">
+          <p className="small">
+            还没做测评？做完之后这里会按你的兴趣方向<strong>高亮</strong>命中的条目。
+            现在也可以直接按方向或姓名筛。
+          </p>
+          <Link className="button-ghost" href="/assessment">
+            花两分钟做个测评
+          </Link>
         </div>
       )}
 

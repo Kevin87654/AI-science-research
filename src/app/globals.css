@@ -248,6 +248,16 @@ h2 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.3; margin: 0 0 32px; le
   transition: background 0.18s ease;
 }
 .step-card:last-child { border-right: 0; }
+/*
+  引导优化 A：铺满整张卡的点击层。
+  用一层空链接覆盖，而不是把 `<li>` 换成 `<a>` —— `.step-card` 同时是网格项，
+  换标签会连带改掉网格布局，而动布局是这套视觉系统里最该谨慎的部分。
+  `inset: 0` 铺满（含 32px 内边距，所以整卡任意位置都能点）；
+  焦点框负数偏移是为了收在卡片内 —— 全局那条 `a:focus-visible` 的 +2px 会被网格边框切掉。
+  注意：这一层是定位元素，会盖在 h3/p 之上（点击命中、文字不可选）；`.step-card::after`
+  是伪元素、绘制在其后，所以 hover 时顶部那道黄条依然可见。
+*/
+.step-card-hit { position: absolute; inset: 0; outline-offset: -3px; }
 .step-card::after { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--accent-deep); opacity: 0; transition: opacity 0.18s ease; }
 .step-card:hover { background: #fff; }
 .step-card:hover::after { opacity: 1; }

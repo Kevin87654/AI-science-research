@@ -1,0 +1,192 @@
+{
+  "schemaVersion": "1.0.0",
+  "scope": "科研常用站点导航：论文库、学习资料、前沿资讯三类，非全部。",
+  "notice": "链接与说明为编辑整理，仅供导航；具体服务、收费与内容以各站点官方为准。",
+  "tools": [
+    {
+      "id": "arxiv",
+      "name": "arXiv",
+      "url": "https://arxiv.org",
+      "category": "paper-library",
+      "description": "预印本平台，物理、数学、计算机与 AI 等领域的新论文通常先发在这里。",
+      "access": "free",
+      "language": "en",
+      "tags": ["预印本", "CS", "AI"],
+      "note": "未经过同行评审，读的时候要自己判断。"
+    },
+    {
+      "id": "google-scholar",
+      "name": "Google Scholar",
+      "url": "https://scholar.google.com",
+      "category": "paper-library",
+      "description": "跨学科学术搜索，可按作者、标题检索，还能看引用关系。",
+      "access": "free",
+      "language": "en",
+      "tags": ["学术搜索", "引用"]
+    },
+    {
+      "id": "semantic-scholar",
+      "name": "Semantic Scholar",
+      "url": "https://www.semanticscholar.org",
+      "category": "paper-library",
+      "description": "AI 驱动的学术搜索，能自动提取论文摘要与引用脉络。",
+      "access": "free",
+      "language": "en",
+      "tags": ["学术搜索", "AI"]
+    },
+    {
+      "id": "dblp",
+      "name": "DBLP",
+      "url": "https://dblp.org",
+      "category": "paper-library",
+      "description": "计算机领域的论文数据库，查作者、会议与期刊发表记录很方便。",
+      "access": "free",
+      "language": "en",
+      "tags": ["计算机", "论文库"]
+    },
+    {
+      "id": "cnki",
+      "name": "中国知网 CNKI",
+      "url": "https://www.cnki.net",
+      "category": "paper-library",
+      "description": "中文文献最全的入口之一，覆盖期刊、学位论文与会议。",
+      "access": "freemium",
+      "language": "zh",
+      "tags": ["中文文献", "学位论文"],
+      "note": "检索免费，多数全文需机构订阅或付费。"
+    },
+    {
+      "id": "pubmed",
+      "name": "PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov",
+      "category": "paper-library",
+      "description": "生物医学与生命科学领域的文献检索入口。",
+      "access": "free",
+      "language": "en",
+      "tags": ["生物医学", "文献检索"]
+    },
+    {
+      "id": "icourse163",
+      "name": "中国大学 MOOC",
+      "url": "https://www.icourse163.org",
+      "category": "learning",
+      "description": "国内高校的免费公开课平台，适合入门一门学科。",
+      "access": "free",
+      "language": "zh",
+      "tags": ["公开课", "入门"]
+    },
+    {
+      "id": "khan-academy",
+      "name": "Khan Academy",
+      "url": "https://www.khanacademy.org",
+      "category": "learning",
+      "description": "从基础数学到物理、计算机的免费课程，讲解细致。",
+      "access": "free",
+      "language": "both",
+      "tags": ["基础", "课程"]
+    },
+    {
+      "id": "3blue1brown",
+      "name": "3Blue1Brown",
+      "url": "https://www.3blue1brown.com",
+      "category": "learning",
+      "description": "用可视化动画讲数学与算法，把抽象概念讲得直观。",
+      "access": "free",
+      "language": "en",
+      "tags": ["数学", "可视化"],
+      "note": "有中文字幕版本。"
+    },
+    {
+      "id": "papers-with-code",
+      "name": "Papers with Code",
+      "url": "https://paperswithcode.com",
+      "category": "learning",
+      "description": "论文与开源代码、排行榜放在一起，方便复现。",
+      "access": "free",
+      "language": "en",
+      "tags": ["论文", "代码", "AI"]
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "url": "https://github.com",
+      "category": "learning",
+      "description": "全球最大的开源代码托管平台，很多论文代码都公开在这里。",
+      "access": "free",
+      "language": "en",
+      "tags": ["代码", "开源"]
+    },
+    {
+      "id": "csdn",
+      "name": "CSDN",
+      "url": "https://www.csdn.net",
+      "category": "learning",
+      "description": "中文技术社区，教程与踩坑记录多，适合快速查一个具体问题。",
+      "access": "free",
+      "language": "zh",
+      "tags": ["中文", "教程"]
+    },
+    {
+      "id": "jiqizhixin",
+      "name": "机器之心",
+      "url": "https://www.jiqizhixin.com",
+      "category": "frontier-news",
+      "description": "AI 领域的进展解读与产业资讯。",
+      "access": "free",
+      "language": "zh",
+      "tags": ["AI", "资讯"]
+    },
+    {
+      "id": "qbitai",
+      "name": "量子位",
+      "url": "https://www.qbitai.com",
+      "category": "frontier-news",
+      "description": "追踪 AI 与前沿科技动态，更新快。",
+      "access": "free",
+      "language": "zh",
+      "tags": ["AI", "资讯"]
+    },
+    {
+      "id": "paperweekly",
+      "name": "PaperWeekly",
+      "url": "https://www.paperweekly.site",
+      "category": "frontier-news",
+      "description": "论文解读与分享社区，用通俗语言讲新论文。",
+      "access": "free",
+      "language": "zh",
+      "tags": ["论文解读", "AI"]
+    },
+    {
+      "id": "nature",
+      "name": "Nature",
+      "url": "https://www.nature.com",
+      "category": "frontier-news",
+      "description": "顶级学术期刊，同时提供科研新闻与评论。",
+      "access": "freemium",
+      "language": "en",
+      "tags": ["综合", "前沿"],
+      "note": "部分论文需订阅。"
+    },
+    {
+      "id": "science-daily",
+      "name": "ScienceDaily",
+      "url": "https://www.sciencedaily.com",
+      "category": "frontier-news",
+      "description": "聚合各领域的科研新闻，用科普语言写最新发现。",
+      "access": "free",
+      "language": "en",
+      "tags": ["科普", "综合"]
+    },
+    {
+      "id": "mit-technology-review",
+      "name": "MIT Technology Review",
+      "url": "https://www.technologyreview.com",
+      "category": "frontier-news",
+      "description": "科技与商业交叉的深度报道，看技术如何影响世界。",
+      "access": "freemium",
+      "language": "en",
+      "tags": ["科技", "深度"],
+      "note": "部分深度文章需订阅。"
+    }
+  ]
+}

@@ -14,3 +14,4 @@ export type * from "./profile";
 export type * from "./progress";
 export type * from "./roadmap";
 export type * from "./source";
+export type * from "./tool";

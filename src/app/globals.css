@@ -524,6 +524,18 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .teacher-source p { margin: 5px 0 0; }
 .teacher-link-notice { background: var(--surface-quiet); border: 1px solid var(--line-strong); }
 
+/* =============================================================
+   科研工具箱（B 模块）—— 与教师目录同一套布局语言，只保留导航所需
+   ============================================================= */
+.tool-filters { margin: 20px 0 16px; display: grid; gap: 14px; }
+.tool-search .note-input { width: 100%; min-height: 48px; font-size: 16px; }
+.tool-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+.tool-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 14px; }
+.tool-card { display: block; }
+.tool-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.tool-head .card-title { margin-bottom: 7px; }
+.tool-note { margin: 9px 0 0; }
+
 .qa-form { display: flex; gap: 11px; margin: 20px 0 14px; }
 .qa-form .note-input { flex: 1; min-width: 0; min-height: 48px; font-size: 16px; }
 .qa-quick { margin-bottom: 20px; }
@@ -589,6 +601,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   .header-tagline { font-size: 14px; }
   .teacher-head { flex-direction: column; }
   .teacher-facts { grid-template-columns: 1fr; gap: 11px; }
+  .tool-head { flex-direction: column; align-items: stretch; }
   .qa-form { flex-wrap: wrap; }
   .qa-form .note-input { flex-basis: 100%; }
   .qa-answer-head { flex-direction: column; }

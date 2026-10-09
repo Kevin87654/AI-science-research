@@ -56,11 +56,12 @@ export const sampleQuestionnaire: AssessmentQuestionnaire = {
   ],
 };
 
-/** ③ 测评提交：**不含 userId**，身份从会话取。 */
+/** ③ 测评提交：**不含 userId**，身份从会话取。`interests` 来自测评开头的兴趣探测。 */
 export const sampleSubmission: AssessmentSubmission = {
   questionnaireId: "questionnaire-v1",
   mode: "demo",
   answers: [{ questionId: "q-research-basic", optionIds: ["a-partly"], unknown: false }],
+  interests: [],
   submittedAt: NOW,
 };
 

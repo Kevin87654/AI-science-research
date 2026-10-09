@@ -256,24 +256,6 @@ const QUESTION_SEEDS: QuestionSeed[] = [
       { id: "act-lab", label: "进过实验室，跟着老师或学长做过事", score: 3 },
     ],
   },
-  /* ---------------- 兴趣方向（不计分） ---------------- */
-  {
-    id: "q-interest",
-    dimension: "interest-direction",
-    prompt: "下面哪些方向你有点想了解？（可多选）",
-    type: "multi",
-    level: "core",
-    inDemo: true,
-    options: [
-      { id: "it-ai", label: "人工智能", score: null },
-      { id: "it-robotics", label: "机器人", score: null },
-      { id: "it-data", label: "数据科学", score: null },
-      { id: "it-bio", label: "生物医学", score: null },
-      { id: "it-material", label: "材料与能源", score: null },
-      { id: "it-hci", label: "人机交互", score: null },
-      { id: "it-security", label: "网络安全", score: null },
-    ],
-  },
   /* ---------------- 目标与时间（不计分） ---------------- */
   {
     id: "q-goal",
@@ -384,8 +366,11 @@ export function getQuestionnaire(mode: AssessmentMode): AssessmentQuestionnaire 
 }
 
 /**
- * 演示用的预设作答（PRD §18.2 的示例用户：大一、计算机、对 AI 与机器人有兴趣、
- * 编程刚起步、不会读论文、每周 3～5 小时）。
+ * 演示用的预设作答（PRD §18.2 的示例用户：大一、计算机、编程刚起步、
+ * 不会读论文、每周 3～5 小时）。
+ *
+ * 兴趣方向不再在这里 —— 第二轮起兴趣由测评开头的启发式探测产出，
+ * 演示流程的探测结果见 `interest-probe.ts` 的 `DEMO_PROBE_ANSWERS`。
  *
  * ⚠️ 它是**明确的样例数据**：用它生成的画像与路线都必须带 `isDemo: true`。
  */
@@ -396,6 +381,5 @@ export const DEMO_ANSWERS: AssessmentAnswer[] = [
   { questionId: "q-method-kinds", optionIds: ["method-one"], unknown: false },
   { questionId: "q-skill-code", optionIds: ["code-course"], unknown: false },
   { questionId: "q-exp-paper", optionIds: ["exp-none"], unknown: false },
-  { questionId: "q-interest", optionIds: ["it-ai", "it-robotics", "it-data"], unknown: false },
   { questionId: "q-time", optionIds: ["time-3-5"], unknown: false },
 ];

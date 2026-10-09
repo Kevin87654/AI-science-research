@@ -20,6 +20,7 @@ import type {
   AssessmentQuestion,
   AssessmentQuestionnaire,
   AssessmentSubmission,
+  InterestTag,
 } from "@/contracts";
 // 用相对路径 + `.ts` 后缀：这样 `pnpm test`（node --test）能直接加载本模块。
 // 纯函数必须能脱离 Next 运行时单独验证，见《工程起步与分工路线》的验收门槛。
@@ -57,11 +58,8 @@ export type DimensionScore = {
   unknownDeclared: boolean;
 };
 
-export type InterestLabel = { id: string; label: string };
-
-/** 偏好维度读出来的规划参数。 */
+/** 偏好维度读出来的规划参数（不含兴趣——兴趣来自测评开头的探测，见 `interest-probe.ts`）。 */
 export type PreferenceValues = {
-  interests: InterestLabel[];
   weeklyHours: number | null;
   goalOptionId: string | null;
 };
@@ -70,8 +68,8 @@ export type AssessmentScoring = {
   dimensions: DimensionScore[];
   /** 参与阶段判定的能力维度。 */
   abilityDimensions: DimensionScore[];
-  /** 由兴趣题选项直接得到的标签，供 C 模块检索使用。 */
-  interests: InterestLabel[];
+  /** 由测评开头的兴趣探测得到的标签，供画像、论文推荐与 C 模块检索使用。 */
+  interests: InterestTag[];
   /** 每周可投入小时数；未作答为 `null`。 */
   weeklyHours: number | null;
   /** 目标题选中的选项 id；未作答为 `null`。 */
@@ -149,22 +147,24 @@ export function buildSubmission(
   questionnaire: AssessmentQuestionnaire,
   answers: AssessmentAnswer[],
   submittedAt: string,
+  interests: InterestTag[] = [],
 ): AssessmentSubmission {
   return {
     questionnaireId: questionnaire.id,
     mode: questionnaire.mode,
     answers,
+    interests,
     submittedAt,
   };
 }
 
-/** 把偏好维度（兴趣 / 目标 / 时间）的选中项翻译成规划参数，不参与评分。 */
+/** 把偏好维度（目标 / 时间）的选中项翻译成规划参数，不参与评分。兴趣不在这里——它来自探测。 */
 export function readPreferenceValues(
   questionnaire: AssessmentQuestionnaire,
   answers: AssessmentAnswer[],
 ): PreferenceValues {
   const map = toAnswerMap(answers);
-  const values: PreferenceValues = { interests: [], weeklyHours: null, goalOptionId: null };
+  const values: PreferenceValues = { weeklyHours: null, goalOptionId: null };
 
   for (const question of questionnaire.questions) {
     if (DIMENSION_KIND[question.dimension] !== "preference") continue;
@@ -175,10 +175,6 @@ export function readPreferenceValues(
     for (const optionId of answer.optionIds) {
       const option = question.options.find((candidate) => candidate.id === optionId);
       if (!option) continue;
-
-      if (question.dimension === "interest-direction") {
-        values.interests.push({ id: option.id, label: option.label });
-      }
 
       const hours = WEEKLY_HOURS_BY_OPTION[option.id];
       if (typeof hours === "number") values.weeklyHours = hours;
@@ -194,7 +190,8 @@ export function scoreAssessment(
   questionnaire: AssessmentQuestionnaire,
   submission: AssessmentSubmission,
 ): AssessmentScoring {
-  return scoreFromAnswers(questionnaire, submission.answers);
+  // `?? []`：兼容第一轮存在 localStorage、还没有 `interests` 字段的旧提交。
+  return scoreFromAnswers(questionnaire, submission.answers, submission.interests ?? []);
 }
 
 /**
@@ -209,6 +206,7 @@ export function scoreAssessment(
 export function scoreFromAnswers(
   questionnaire: AssessmentQuestionnaire,
   answers: AssessmentAnswer[],
+  interests: InterestTag[] = [],
 ): AssessmentScoring {
   const map = toAnswerMap(answers);
   const dimensions: DimensionScore[] = [];
@@ -256,7 +254,7 @@ export function scoreFromAnswers(
   return {
     dimensions,
     abilityDimensions,
-    interests: preference.interests,
+    interests,
     weeklyHours: preference.weeklyHours,
     goalOptionId: preference.goalOptionId,
     unknownDimensions: abilityDimensions

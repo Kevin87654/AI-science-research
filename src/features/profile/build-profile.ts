@@ -56,6 +56,15 @@ const FALLBACK_GAPS = [
   "还没和在做的老师或学长认真聊过一次",
 ];
 
+/**
+ * 兜底优势：能力全是最低档、也没探测出兴趣时，仍需凑满 PRD §9.2 要求的 2 条优势。
+ * 第一轮由兴趣勾选题的结果间接兜了底；第二轮兴趣改走探测后，这条会真正用到。
+ */
+const FALLBACK_STRENGTHS = [
+  BASELINE_STRENGTH,
+  "你愿意花时间做一次测评，本身就是认真对待科研这件事的信号",
+];
+
 export type BuildProfileInput = {
   /** 服务端会话确认的用户标识。本地生成画像时也必须传真实会话值。 */
   userId: string;
@@ -116,7 +125,11 @@ function buildStrengths(scoring: AssessmentScoring): string[] {
     strengths.push(`你已经说出了自己想了解的方向：${labels}`);
   }
 
-  if (strengths.length < 2) strengths.push(BASELINE_STRENGTH);
+  // 兜底：能力优势不足 2 条时补足（PRD §9.2 要求 2～5 项优势）。
+  for (const fallback of FALLBACK_STRENGTHS) {
+    if (strengths.length >= 2) break;
+    if (!strengths.includes(fallback)) strengths.push(fallback);
+  }
   return strengths.slice(0, 5);
 }
 
@@ -242,11 +255,7 @@ export function buildProfile(input: BuildProfileInput): Profile {
   const stageCode = decideStage(input.scoring);
   const stage = STAGES[stageCode];
 
-  const interests: InterestTag[] = input.scoring.interests.map((interest) => ({
-    id: interest.id,
-    label: interest.label,
-    source: "derived",
-  }));
+  const interests: InterestTag[] = [...input.scoring.interests];
 
   return {
     schemaVersion: SCHEMA_VERSION,

@@ -23,6 +23,7 @@ import type {
   AssessmentQuestion,
   AssessmentStep,
   AssessmentStepProgress,
+  InterestTag,
 } from "@/contracts";
 import { buildProfile } from "@/features/profile/build-profile";
 import { ensureSession, postJson } from "@/features/shared/api-client";
@@ -31,11 +32,12 @@ import { buildFlow, saveFlow } from "@/features/shared/local-bridge";
 import { clearDraft, saveDraft } from "@/features/shared/local-session";
 import { useIsClient } from "@/features/shared/use-local-flow";
 import { useAssessmentDraft } from "@/features/shared/use-local-session";
+import { DEMO_PROBE_ANSWERS, PROBE_QUESTIONS, probeInterests, type ProbeAnswer } from "./interest-probe";
 import { planNextQuestion } from "./next-question";
 import { DEMO_ANSWERS, getQuestionnaire } from "./question-bank";
 import { buildSubmission, scoreAssessment } from "./scoring";
 
-type Phase = "intro" | "asking";
+type Phase = "intro" | "probing" | "asking";
 
 type StepItem = {
   question: AssessmentQuestion;
@@ -54,6 +56,10 @@ function answersOf(steps: StepItem[]): AssessmentAnswer[] {
 export function AssessmentForm() {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("intro");
+  /** 探测阶段的作答（启发式问题）。 */
+  const [probeAnswers, setProbeAnswers] = useState<ProbeAnswer[]>([]);
+  /** 探测算出的兴趣领域；进入能力测评后不再变。 */
+  const [probeResult, setProbeResult] = useState<InterestTag[] | null>(null);
   const [mode, setMode] = useState<AssessmentMode>("full");
   const [steps, setSteps] = useState<StepItem[]>([]);
   /**
@@ -122,8 +128,8 @@ export function AssessmentForm() {
   useEffect(() => {
     if (finishedRef.current) return;
     if (phase !== "asking" || steps.length === 0) return;
-    saveDraft({ mode, steps, cursor, basicMode });
-  }, [phase, mode, steps, cursor, basicMode]);
+    saveDraft({ mode, steps, cursor, basicMode, probeResult: probeResult ?? [] });
+  }, [phase, mode, steps, cursor, basicMode, probeResult]);
 
   /** 接着上次答（C1）。只有通过结构校验的草稿才会被读到。 */
   function resumeDraft() {
@@ -132,6 +138,7 @@ export function AssessmentForm() {
     setSteps(draft.steps);
     setCursor(draft.cursor);
     setBasicMode(draft.basicMode);
+    setProbeResult(draft.probeResult);
     setProblem(null);
     setPhase("asking");
   }
@@ -173,7 +180,35 @@ export function AssessmentForm() {
     return planNextQuestion(payload);
   }
 
-  async function start() {
+  /** 开始：先进入兴趣探测阶段（第二轮：启发式提问取代旧的兴趣勾选题）。 */
+  function start() {
+    setProblem(null);
+    setProbeAnswers([]);
+    setProbeResult(null);
+    setPhase("probing");
+  }
+
+  /** 探测阶段选一个选项（单选 / 多选）。 */
+  function chooseProbeOption(questionId: string, optionId: string, multiple: boolean) {
+    setProblem(null);
+    setProbeAnswers((previous) => {
+      const existing = previous.find((answer) => answer.questionId === questionId);
+      const selected = existing?.optionIds ?? [];
+      const optionIds = multiple
+        ? selected.includes(optionId)
+          ? selected.filter((id) => id !== optionId)
+          : [...selected, optionId]
+        : [optionId];
+      const others = previous.filter((answer) => answer.questionId !== questionId);
+      return [...others, { questionId, optionIds }];
+    });
+  }
+
+  /** 探测完成 → 进入能力维度测评（先要第一题）。 */
+  async function beginAsking() {
+    const result = probeInterests(probeAnswers);
+    setProbeResult(result.interests);
+
     setBusy(true);
     setProblem(null);
     setElapsed(0);
@@ -255,7 +290,7 @@ export function AssessmentForm() {
     setServerProgress(step.progress);
 
     if (step.done || !step.question) {
-      await finish(steps, mode, demoFilled);
+      await finish(steps, mode, demoFilled, probeResult ?? []);
       return;
     }
 
@@ -273,7 +308,12 @@ export function AssessmentForm() {
    * 生成的画像**没有被打上 `isDemo` 标记**（违反契约"演示数据必须显式标记"），
    * 提交里的 `questionnaireId` 也还是全量版。改为显式传参后，这类时序问题不可能再出现。
    */
-  async function finish(finalSteps: StepItem[], finalMode: AssessmentMode, isDemo: boolean) {
+  async function finish(
+    finalSteps: StepItem[],
+    finalMode: AssessmentMode,
+    isDemo: boolean,
+    interests: InterestTag[],
+  ) {
     setBusy(true);
     setProblem(null);
 
@@ -286,7 +326,7 @@ export function AssessmentForm() {
 
     const questionnaire = getQuestionnaire(finalMode);
     const submittedAt = new Date().toISOString();
-    const submission = buildSubmission(questionnaire, answersOf(finalSteps), submittedAt);
+    const submission = buildSubmission(questionnaire, answersOf(finalSteps), submittedAt, interests);
     const scoring = scoreAssessment(questionnaire, submission);
     const submissionId = `sub-${Date.parse(submittedAt)}`;
 
@@ -335,7 +375,7 @@ export function AssessmentForm() {
     setMode("demo");
     setDemoFilled(true);
     setSteps(demoSteps);
-    await finish(demoSteps, "demo", true);
+    await finish(demoSteps, "demo", true, probeInterests(DEMO_PROBE_ANSWERS).interests);
   }
 
   /* ----------------------------- 介绍页 ----------------------------- */
@@ -347,8 +387,8 @@ export function AssessmentForm() {
             <p className="eyebrow">科研认知测评</p>
             <h1 id="assessment-title">先认识自己现在的位置</h1>
             <p className="lead">
-              不是考试，也没有对错。我会一道一道地问，根据你的回答决定下一个问什么 ——
-              所以题量是因人而异的，大致 8～12 道。
+              不是考试，也没有对错。开始后会先聊两句，猜一猜你感兴趣的方向，
+              再一道一道地问正式题目 —— 题量因人而异，大致 8～12 道。
             </p>
           </div>
         </div>
@@ -383,7 +423,7 @@ export function AssessmentForm() {
             <li>论文、检索、研究方法接触到哪一步</li>
             <li>编程与英文阅读的基础</li>
             <li>已经有过哪些真实经历</li>
-            <li>感兴趣的方向，以及每周能投入多少时间</li>
+            <li>每周能投入多少时间</li>
           </ul>
           <p className="muted small">
             遇到真的不清楚的题目，直接选「不太清楚」就好 —— 那同样是有用的信息，不会扣分。
@@ -412,6 +452,63 @@ export function AssessmentForm() {
           </button>
           <button type="button" className="button-ghost" onClick={() => void runDemoAnswers()} disabled={busy}>
             用示例答案直接看结果
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  /* ----------------------------- 兴趣探测 ----------------------------- */
+  if (phase === "probing") {
+    return (
+      <section className="panel" aria-labelledby="probe-title">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">先了解一下你</p>
+            <h1 id="probe-title">先聊两句，再开始测评</h1>
+            <p className="lead">
+              我不直接问你对哪个方向感兴趣——下面两个问题，帮我从你的偏好里猜出方向。
+              也可以都不选，直接继续。
+            </p>
+          </div>
+        </div>
+
+        {PROBE_QUESTIONS.map((question) => {
+          const answer = probeAnswers.find((item) => item.questionId === question.id);
+          const checkedIds = answer?.optionIds ?? [];
+          return (
+            <article className="card" key={question.id}>
+              <h2 className="card-title">{question.prompt}</h2>
+              {question.type === "multi" ? <span className="badge">可多选</span> : null}
+              <div className="option-list option-list-large">
+                {question.options.map((option) => {
+                  const checked = checkedIds.includes(option.id);
+                  return (
+                    <label className={checked ? "option option-checked" : "option"} key={option.id}>
+                      <input
+                        type={question.type === "multi" ? "checkbox" : "radio"}
+                        name={question.id}
+                        checked={checked}
+                        onChange={() => chooseProbeOption(question.id, option.id, question.type === "multi")}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </article>
+          );
+        })}
+
+        {problem ? (
+          <p className="error-text" role="alert">
+            {problem}
+          </p>
+        ) : null}
+
+        <div className="form-actions">
+          <button type="button" className="button" onClick={() => void beginAsking()} disabled={busy}>
+            {busy ? "正在准备…" : "继续"}
           </button>
         </div>
       </section>

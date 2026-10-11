@@ -38,7 +38,7 @@ export const DEEPEN_BUDGET: Record<AssessmentMode, number> = { full: 3, demo: 0 
 /** 核心题平均分达到这个水平，才值得再深挖一道。 */
 export const DEEPEN_THRESHOLD = 2;
 
-/** 问核心题的顺序：先认知，再方法技能，最后经历与偏好。 */
+/** 问核心题的顺序：先认知，再方法技能，最后经历与目标时间。 */
 const DIMENSION_ORDER: AssessmentDimension[] = [
   "research-literacy",
   "paper-literacy",
@@ -46,7 +46,6 @@ const DIMENSION_ORDER: AssessmentDimension[] = [
   "method-basics",
   "skill-basics",
   "action-experience",
-  "interest-direction",
   "goal-and-time",
 ];
 

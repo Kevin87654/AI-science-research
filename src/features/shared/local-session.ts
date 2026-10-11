@@ -15,7 +15,7 @@
  *    绝不让脏数据流进界面。
  * 3. **隐私模式下无声降级**：不允许保存时返回失败（界面决定怎么提示），不抛异常。
  */
-import type { AssessmentAnswer, AssessmentMode, AssessmentQuestion, QuestionResult } from "@/contracts";
+import type { AssessmentAnswer, AssessmentMode, AssessmentQuestion, InterestTag, QuestionResult } from "@/contracts";
 
 const QA_KEY = "research-assistant:qa-last:v1";
 const DRAFT_KEY = "research-assistant:assessment-draft:v1";
@@ -236,6 +236,8 @@ export type AssessmentDraft = {
   cursor: number;
   /** 出题已退回规则模式（AI 不可用）。恢复时要一起还回来，否则界面会显示错的说明。 */
   basicMode: boolean;
+  /** 测评开头的兴趣探测结果；恢复时一起还回来，否则画像/路线会丢掉兴趣。 */
+  probeResult: InterestTag[];
 };
 
 function isDraftStep(value: unknown): value is AssessmentDraftStep {
@@ -264,6 +266,7 @@ function isAssessmentDraft(value: unknown): value is AssessmentDraft {
   if (typeof value.cursor !== "number") return false;
   if (value.cursor < 0 || value.cursor >= value.steps.length) return false;
   if (typeof value.basicMode !== "boolean") return false;
+  if (!Array.isArray(value.probeResult)) return false;
   return true;
 }
 

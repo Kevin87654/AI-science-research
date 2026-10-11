@@ -36,6 +36,22 @@ export interface InterestTag {
   source: "user-input" | "derived";
 }
 
+/**
+ * 兴趣探测结果（第二轮新增）。
+ *
+ * 由测评开头的**启发式提问**产出：不问用户"你对哪个方向感兴趣"，
+ * 而是靠一组侧面问题从作答里推断出兴趣领域。它**取代**了旧测评里
+ * `q-interest` 那 7 个直接勾选的方向（2026-10-09 拍板）。
+ *
+ * 它是 B → C 的共同输入：B 用它推荐入门论文，C 用它做刊物科普。
+ */
+export interface InterestProbeResult {
+  /** 探测出的兴趣领域标签，`source` 固定为 `derived`。 */
+  interests: InterestTag[];
+  /** 为什么得出这个结论，具体可解释，会展示给用户。 */
+  rationale: string;
+}
+
 /** 建议优先完成的行动。 */
 export interface ProfileAction {
   id: string;

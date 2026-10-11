@@ -13,6 +13,7 @@
  * ⚠️ 改字段必须同步改 `samples.ts`（不改就编译不过，这是刻意的）。
  */
 import type { IsoDateTime, VersionedPayload } from "./common";
+import type { InterestTag } from "./profile";
 
 /** PRD §8.2 的八个测评维度。 */
 export type AssessmentDimension =
@@ -79,6 +80,8 @@ export interface AssessmentSubmission {
   questionnaireId: string;
   mode: AssessmentMode;
   answers: AssessmentAnswer[];
+  /** 测评开头的兴趣探测结果（第二轮新增），取代旧的兴趣勾选题。 */
+  interests: InterestTag[];
   submittedAt: IsoDateTime;
 }
 

@@ -9,6 +9,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import type { AssessmentAnswer, AssessmentQuestion } from "../../contracts/assessment.ts";
+import type { InterestTag } from "../../contracts/profile.ts";
+import { DEMO_PROBE_ANSWERS, probeInterests } from "./interest-probe.ts";
 import { DEMO_ANSWERS, DEMO_QUESTIONNAIRE, FULL_QUESTIONNAIRE } from "./question-bank.ts";
 import { buildSubmission, findUnansweredQuestions, levelOf, scoreAssessment } from "./scoring.ts";
 
@@ -54,8 +56,8 @@ function withAll(answers: AssessmentAnswer[], overrides: AssessmentAnswer[]): As
   return overrides.reduce((accumulated, override) => withOverride(accumulated, override), answers);
 }
 
-function score(answers: AssessmentAnswer[], questionnaire = FULL_QUESTIONNAIRE) {
-  return scoreAssessment(questionnaire, buildSubmission(questionnaire, answers, NOW));
+function score(answers: AssessmentAnswer[], questionnaire = FULL_QUESTIONNAIRE, interests: InterestTag[] = []) {
+  return scoreAssessment(questionnaire, buildSubmission(questionnaire, answers, NOW, interests));
 }
 
 function dimensionOf(scoring: ReturnType<typeof score>, dimension: string) {
@@ -100,10 +102,13 @@ test("选了最低档记为 starting，与「不知道」是两种结论", () =>
   assert.ok(!scoring.unknownDimensions.includes("method-basics"));
 });
 
-test("兴趣与时间不计分，也不会被算成能力缺口", () => {
-  let answers = withOverride(allAnswers("highest"), answer("q-interest", ["it-ai", "it-robotics"]));
-  answers = withOverride(answers, answer("q-time", ["time-6-10"]));
-  const scoring = score(answers);
+test("兴趣由探测结果注入、不参与评分；时间不计分，也不会被算成能力缺口", () => {
+  const answers = withOverride(allAnswers("highest"), answer("q-time", ["time-6-10"]));
+  const interests: InterestTag[] = [
+    { id: "it-ai", label: "人工智能", source: "derived" },
+    { id: "it-robotics", label: "机器人", source: "derived" },
+  ];
+  const scoring = score(answers, FULL_QUESTIONNAIRE, interests);
 
   assert.deepEqual(
     scoring.interests.map((item) => item.id),
@@ -111,9 +116,8 @@ test("兴趣与时间不计分，也不会被算成能力缺口", () => {
   );
   assert.equal(scoring.weeklyHours, 8);
 
-  const interest = dimensionOf(scoring, "interest-direction");
-  assert.equal(interest?.kind, "preference");
-  assert.equal(interest?.score, null);
+  // 兴趣不再是测评维度，dimensions 里不该有它，也不会被算成能力缺口。
+  assert.equal(dimensionOf(scoring, "interest-direction"), undefined);
   assert.ok(!scoring.unknownDimensions.includes("interest-direction"));
 
   // 偏好维度不计分，所以不会把能力维度拉低。
@@ -126,10 +130,7 @@ test("必答题未作答能被找出，且「明确不知道」不算漏答", ()
   );
   assert.deepEqual(findUnansweredQuestions(FULL_QUESTIONNAIRE, partial), ["q-exp-paper", "q-goal"]);
 
-  const withUnknown = [...partial, unknownAnswer("q-interest")];
-  assert.deepEqual(findUnansweredQuestions(FULL_QUESTIONNAIRE, withUnknown), ["q-exp-paper", "q-goal"]);
-
-  const alsoGoalUnknown = [...withUnknown, unknownAnswer("q-goal")];
+  const alsoGoalUnknown = [...partial, unknownAnswer("q-goal")];
   assert.deepEqual(findUnansweredQuestions(FULL_QUESTIONNAIRE, alsoGoalUnknown), ["q-exp-paper"]);
 });
 
@@ -146,12 +147,13 @@ test("全选最高档与全选最低档得到明显不同的维度分布", () =>
 });
 
 test("演示答案在演示问卷上结果可复现，且与全量问卷题量不同", () => {
-  const first = score(DEMO_ANSWERS, DEMO_QUESTIONNAIRE);
-  const second = score(DEMO_ANSWERS, DEMO_QUESTIONNAIRE);
+  const demoInterests = probeInterests(DEMO_PROBE_ANSWERS).interests;
+  const first = score(DEMO_ANSWERS, DEMO_QUESTIONNAIRE, demoInterests);
+  const second = score(DEMO_ANSWERS, DEMO_QUESTIONNAIRE, demoInterests);
 
   assert.deepEqual(first, second);
-  assert.equal(DEMO_QUESTIONNAIRE.questions.length, 8, "演示版只保留核心题与偏好题");
-  assert.equal(FULL_QUESTIONNAIRE.questions.length, 15, "全量题库含 6 道深入题");
+  assert.equal(DEMO_QUESTIONNAIRE.questions.length, 7, "演示版只保留核心题与偏好题（兴趣题已移除）");
+  assert.equal(FULL_QUESTIONNAIRE.questions.length, 14, "全量题库含 6 道深入题");
   assert.equal(first.weeklyHours, 4);
   assert.deepEqual(
     first.interests.map((item) => item.label),
@@ -164,7 +166,7 @@ test("每题都有选项，认知题都提供「不知道」", () => {
   for (const question of FULL_QUESTIONNAIRE.questions) {
     assert.ok(question.options.length >= 2, `${question.id} 选项太少`);
     assert.ok(question.required, `${question.id} 应为必答`);
-    if (question.dimension !== "interest-direction" && question.id !== "q-goal" && question.id !== "q-time") {
+    if (question.id !== "q-goal" && question.id !== "q-time") {
       assert.equal(question.allowUnknown, true, `${question.id} 是认知题，应提供「不知道」`);
     }
   }

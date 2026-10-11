@@ -10,6 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import type { AssessmentAnswer, AssessmentMode, AssessmentQuestion, AssessmentStep } from "../../contracts/assessment.ts";
+import { DEMO_PROBE_ANSWERS, probeInterests } from "./interest-probe.ts";
 import { DEMO_ANSWERS, DEMO_QUESTIONNAIRE, QUESTION_BY_ID } from "./question-bank.ts";
 import { DEEPEN_BUDGET, planNextQuestion, rankCandidates } from "./next-question.ts";
 import { scoreFromAnswers } from "./scoring.ts";
@@ -59,7 +60,7 @@ test("第一题是「科研认知」的核心题", () => {
   // 规则模式不编造点评。
   assert.equal(step.probe, null);
   assert.ok(step.reason.length > 0);
-  assert.deepEqual(step.progress, { resolvedDimensions: 0, totalDimensions: 8, answeredCount: 0 });
+  assert.deepEqual(step.progress, { resolvedDimensions: 0, totalDimensions: 7, answeredCount: 0 });
 });
 
 test("题目不会重复问，且最后每个维度都拿到结论", () => {
@@ -127,7 +128,8 @@ test("没问过的维度不算缺口，答过但不知道才算", () => {
 });
 
 test("演示预设答案仍然得到与第一版一致的维度分布", () => {
-  const scoring = scoreFromAnswers(DEMO_QUESTIONNAIRE, DEMO_ANSWERS);
+  const demoInterests = probeInterests(DEMO_PROBE_ANSWERS).interests;
+  const scoring = scoreFromAnswers(DEMO_QUESTIONNAIRE, DEMO_ANSWERS, demoInterests);
 
   assert.equal(scoring.weeklyHours, 4);
   assert.deepEqual(

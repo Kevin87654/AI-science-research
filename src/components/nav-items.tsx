@@ -3,7 +3,7 @@
  *
  * 左侧自动呼出菜单（`app-shell.tsx`）与顶栏（`site-header.tsx`）都从这里取，
  * 避免两处维护同一份列表导致漂移。顺序即完整闭环：
- * 成长首页 → 科研测评 → 我的画像 → 学习路线 → 教师资料 → 科研问答。
+ * 成长首页 → 科研测评 → 我的画像 → 学习路线 → 教师资料 → 科研工具 → 科研问答。
  */
 export type NavItem = {
   href: string;
@@ -98,10 +98,23 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/tools",
+    label: "科研工具",
+    sub: "Toolbox",
+    index: "06",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+        <path d="M14 4h6v6" />
+        <path d="M20 4 10 14" />
+        <path d="M20 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4" />
+      </svg>
+    ),
+  },
+  {
     href: "/questions",
     label: "科研问答",
     sub: "Q&A",
-    index: "06",
+    index: "07",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M20 12.5c0 3.6-3.6 6.5-8 6.5a9.6 9.6 0 0 1-2.6-.35L5 20.5l.9-3.2A6.6 6.6 0 0 1 4 12.5C4 8.9 7.6 6 12 6s8 2.9 8 6.5z" />

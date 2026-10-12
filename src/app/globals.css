@@ -561,6 +561,42 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .qa-inline-link { border: 0; background: none; padding: 0; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; text-decoration: underline; }
 
 /* =============================================================
+   奇思妙想与入门前置路线（B 模块 · 第二轮）
+   ============================================================= */
+.spark-input {
+  width: 100%; min-height: 150px; resize: vertical;
+  border: 1px solid var(--line); padding: 14px 16px; font: inherit; font-size: 16px;
+  line-height: 1.7; background: #fff; color: var(--ink); margin-top: 14px;
+}
+.spark-input::placeholder { color: var(--faint); }
+.spark-input:focus { outline: 2px solid var(--ink); outline-offset: 0; border-color: transparent; }
+.spark-count { text-align: right; margin: 6px 0 0; }
+
+.spark-section-title { font-size: 15px; font-weight: 700; color: var(--ink); margin: 30px 0 14px; }
+.spark-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.spark-card { display: block; }
+.spark-quote {
+  margin: 0 0 16px; padding: 12px 16px; border-left: 3px solid var(--line-strong);
+  background: var(--surface-quiet); color: var(--ink); font-size: 16px; line-height: 1.6;
+}
+.spark-subtitle { font-size: 13px; color: var(--faint); margin: 18px 0 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.spark-response { margin: 16px 0 0; padding: 12px 16px; border-left: 4px solid var(--accent-deep); background: rgba(255, 255, 255, 0.7); }
+.spark-rationale { margin: 12px 0 0; }
+.spark-actions { margin-top: 16px; }
+
+.entry-route-panel { margin-bottom: 30px; }
+.entry-route { margin-top: 6px; }
+.entry-overview { margin: 4px 0 8px; font-size: 16.5px; line-height: 1.65; }
+.entry-section { margin: 20px 0 0; }
+.entry-subtitle { font-size: 13px; color: var(--faint); margin: 0 0 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.entry-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+.entry-list li {
+  display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid var(--line); padding: 12px 16px; background: rgba(255, 255, 255, 0.72);
+}
+.entry-list strong { color: var(--ink); font-weight: 600; }
+
+/* =============================================================
    窄屏
    ============================================================= */
 @media (hover: none), (max-width: 900px) {

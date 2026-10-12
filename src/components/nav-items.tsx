@@ -3,7 +3,7 @@
  *
  * 左侧自动呼出菜单（`app-shell.tsx`）与顶栏（`site-header.tsx`）都从这里取，
  * 避免两处维护同一份列表导致漂移。顺序即完整闭环：
- * 成长首页 → 科研测评 → 我的画像 → 学习路线 → 教师资料 → 科研工具 → 科研问答。
+ * 成长首页 → 科研测评 → 我的画像 → 奇思妙想 → 学习路线 → 教师资料 → 科研工具 → 科研问答。
  */
 export type NavItem = {
   href: string;
@@ -71,10 +71,23 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/sparks",
+    label: "奇思妙想",
+    sub: "Sparks",
+    index: "04",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+        <path d="M9 18h6" />
+        <path d="M10 21h4" />
+        <path d="M12 3a6 6 0 0 0-3.6 10.8c.9.7 1.1 1.6 1.1 2.7h5c0-1.1.2-2 1.1-2.7A6 6 0 0 0 12 3z" />
+      </svg>
+    ),
+  },
+  {
     href: "/roadmap",
     label: "学习路线",
     sub: "Roadmap",
-    index: "04",
+    index: "05",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M5 19V8.5A3.5 3.5 0 0 1 8.5 5H13" />
@@ -89,7 +102,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/resources",
     label: "教师资料",
     sub: "Faculty",
-    index: "05",
+    index: "06",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v13H6.5A2.5 2.5 0 0 0 4 19.5z" />
@@ -101,7 +114,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/tools",
     label: "科研工具",
     sub: "Toolbox",
-    index: "06",
+    index: "07",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M14 4h6v6" />
@@ -114,7 +127,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/questions",
     label: "科研问答",
     sub: "Q&A",
-    index: "07",
+    index: "08",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M20 12.5c0 3.6-3.6 6.5-8 6.5a9.6 9.6 0 0 1-2.6-.35L5 20.5l.9-3.2A6.6 6.6 0 0 1 4 12.5C4 8.9 7.6 6 12 6s8 2.9 8 6.5z" />

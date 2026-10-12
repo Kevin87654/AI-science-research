@@ -19,6 +19,7 @@ import type { Profile } from "./profile";
 import type { ProgressSnapshot } from "./progress";
 import type { Roadmap } from "./roadmap";
 import type { Source } from "./source";
+import type { InterestEntryRoute, SparkAnalysis } from "./spark";
 
 const SCHEMA_VERSION = "1.0.0";
 const CHECKED_AT = "2026-09-20";
@@ -210,6 +211,46 @@ export const sampleAnswer: Answer = {
   teacherIds: ["szu-cs-example"],
   limitation: "本次样本只覆盖一个研究中心，检索不到不代表全校没有。",
   provenance: "规则检索：关键词命中主题标签 + 校内资源目录。",
+};
+
+/** ⑨ 奇思妙想分析结果（第二轮新增）：自由文本 → 亮点 + 兴趣方向。 */
+export const sampleSparkAnalysis: SparkAnalysis = {
+  schemaVersion: SCHEMA_VERSION,
+  id: "spark-analysis-0001",
+  text: "我平时喜欢把手机里的照片按时间整理成册，还琢磨过能不能自动识别重复的照片。",
+  highlights: [
+    "对重复出现的小事有耐心，愿意动手整理而不是听之任之",
+    "已经会从「能不能自动做」的角度去想日常问题",
+  ],
+  interests: [{ id: "it-ai", label: "人工智能", source: "derived" }],
+  rationale: "你的想法里反复出现「自动识别、整理」，这和计算机视觉与人工智能方向最接近。",
+  response: "你这个「自动识别重复照片」的点子，其实已经是一个很具体的 AI 应用场景了。",
+  generatedAt: NOW,
+};
+
+/** ⑩ 兴趣入门前置路线（第二轮新增）：方向 → 热点/实验/研究者/入门论文导览。 */
+export const sampleEntryRoute: InterestEntryRoute = {
+  schemaVersion: SCHEMA_VERSION,
+  id: "entry-route-it-ai",
+  direction: { id: "it-ai", label: "人工智能", source: "derived" },
+  overview: "人工智能研究如何让机器从数据里学到规律，并完成识别、生成、决策等任务。",
+  hotspots: [
+    { title: "大语言模型与 AIGC", why: "目前最活跃的方向，也是理解「AI 到底会什么」的入口。" },
+    { title: "多模态学习", why: "让模型同时理解文字、图像与语音，是当下的前沿热点。" },
+  ],
+  milestones: [
+    { title: "ImageNet 与 AlexNet（2012）", why: "深度学习的转折点，让「用大量数据训练神经网络」成为主流。" },
+    { title: "AlphaGo（2016）", why: "用强化学习击败人类围棋冠军，让公众第一次直观看到 AI 的能力。" },
+  ],
+  researchers: [
+    { title: "Geoffrey Hinton", why: "深度学习先驱，反向传播与神经网络的核心推动者。" },
+    { title: "Yann LeCun", why: "卷积神经网络（CNN）的提出者之一，现代计算机视觉的奠基人。" },
+  ],
+  entryPapers: [
+    { title: "Attention Is All You Need", why: "提出 Transformer，是如今几乎所有大模型的源头，也是入门必读。" },
+    { title: "ImageNet Classification with Deep Convolutional Neural Networks", why: "即 AlexNet 原论文，篇幅不长，适合作为第一篇深度学习论文。" },
+  ],
+  generatedAt: NOW,
 };
 
 /** 整条流程打包导出，便于一次性引用与对照。 */

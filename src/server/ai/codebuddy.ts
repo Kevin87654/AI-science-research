@@ -6,7 +6,16 @@ import "server-only";
  * 三条纪律：
  *
  * 1. **只做文本问答，不给任何工具。** 我们只需要模型"读一段 JSON、写一段 JSON"，
- *    所以显式传 `allowedTools: []` 并限制 `maxTurns: 1` —— 分析用户作答不需要读写文件。
+ *    所以显式传 `allowedTools: []` —— 模型没有任何读写文件的能力。
+ *
+ *    ⚠️ **「模型间歇空内容（`code=empty`）」的诊断结论（2026-10-11）**：
+ *    default 模型（auto）对内容生成类提示词经常**第一轮只产出 thinking 块、
+ *    第二轮才给正文**，`maxTurns: 1` 会掐断第二轮 → 要么抛 `Max turns (1) exceeded`、
+ *    要么带着孤零零的 thinking 块"成功"结束（取不到文本）。改 `maxTurns: 2` 后
+ *    成功率仍只有 ~1/3；`thinking: {type:'disabled'}` 被 CLI 无视。**真正的根治**是
+ *    给内容生成类任务显式传 `model: 'fast-model'`：实测 3/3 成功、13s、零 thinking 块
+ *    （对比 default 的 1/3 成功、30~80s）。所以本适配器保留 `maxTurns: 2`（无害，
+ *    只在模型确实需要第二轮时才用），并开放 `askText` 的 `model` 参数，由调用方按任务选。
  * 2. **必须有超时。** SDK 是 spawn 一个 CLI 子进程，local 实测约 2.4 秒、Vercel 上
  *    约 7.4 秒（含冷启动）；一旦上游卡住，用户会对着转圈等到崩溃。超时即中断并降级。
  * 3. **密钥只进环境变量，绝不进日志、错误信息或返回值。**
@@ -90,15 +99,19 @@ async function collectText(
   prompt: string,
   abortController: AbortController,
   startedAt: number,
+  model?: string,
 ): Promise<AiTextResult> {
   try {
     const conversation = query({
       prompt,
       options: {
         env: buildCodebuddyEnv(),
-        // 纯文本任务：不开放任何工具，也不给它多轮循环的机会。
+        // 纯文本任务：不开放任何工具；两轮封顶（第一轮 thinking、第二轮正文，见文件头说明）。
         allowedTools: [],
-        maxTurns: 1,
+        maxTurns: 2,
+        // 指定模型；缺省时 SDK 用 default（auto）。内容生成类任务建议显式传 `fast-model`，
+        // 见文件头「模型间歇空内容」的诊断：default 容易只吐 thinking 不吐正文。
+        ...(model ? { model } : {}),
         abortController,
       },
     });
@@ -146,7 +159,10 @@ async function collectText(
   }
 }
 
-export async function askText(prompt: string, options: { timeoutMs?: number } = {}): Promise<AiTextResult> {
+export async function askText(
+  prompt: string,
+  options: { timeoutMs?: number; model?: string } = {},
+): Promise<AiTextResult> {
   if (!isAiConfigured()) {
     return { ok: false, code: "not_configured", message: "未配置 AI 密钥" };
   }
@@ -177,7 +193,7 @@ export async function askText(prompt: string, options: { timeoutMs?: number } = 
     // （连 /api/ping 都超时，因为请求一直占着不放）。
     // 用 race 之后，无论 SDK 行为如何，本函数都在 timeoutMs 内返回；
     // 挂着的那个 CLI 子进程交给系统回收，宁可浪费一点资源也不能让站点失去响应。
-    return await Promise.race([collectText(prompt, abortController, startedAt), deadline]);
+    return await Promise.race([collectText(prompt, abortController, startedAt, options.model), deadline]);
   } finally {
     if (timer) clearTimeout(timer);
     inFlightCalls -= 1;

@@ -9,17 +9,11 @@
  * 它只作为「兴趣领域」喂给画像、路线论文推荐和刊物科普。
  */
 import type { InterestProbeResult, InterestTag } from "@/contracts";
+// 方向目录抽到共享模块：测评探测、奇思妙想、入门前置路线三处共用（见 interest/directions.ts）。
+import { INTEREST_DIRECTIONS, toInterestTag } from "../interest/directions.ts";
 
-/** 兴趣方向目录：id → 展示名。id 沿用旧 `q-interest` 的选项 id，供下游刊物/论文数据引用。 */
-export const INTEREST_DIRECTIONS: Record<string, string> = {
-  "it-ai": "人工智能",
-  "it-robotics": "机器人",
-  "it-data": "数据科学",
-  "it-bio": "生物医学",
-  "it-material": "材料与能源",
-  "it-hci": "人机交互",
-  "it-security": "网络安全",
-};
+// 向后兼容再导出一份，历史引用（如旧测试 / 文档）仍能按老路径取到。
+export { INTEREST_DIRECTIONS };
 
 export type ProbeOption = {
   id: string;
@@ -67,12 +61,6 @@ export type ProbeAnswer = {
   questionId: string;
   optionIds: string[];
 };
-
-function toInterestTag(directionId: string): InterestTag | null {
-  const label = INTEREST_DIRECTIONS[directionId];
-  if (!label) return null;
-  return { id: directionId, label, source: "derived" };
-}
 
 /**
  * 兴趣探测主入口。

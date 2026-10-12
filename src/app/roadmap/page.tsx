@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
+import { EntryRouteSection } from "@/features/roadmap/entry-route-section";
 import { RoadmapBoard } from "@/features/roadmap/roadmap-board";
 import { loadDataset } from "@/server/resources/dataset";
 
@@ -22,6 +23,7 @@ export default function RoadmapPage() {
     <>
       <SiteHeader />
       <main id="main-content" className="container page">
+        <EntryRouteSection />
         <RoadmapBoard sources={knowledge.sources} />
       </main>
       <footer className="container site-footer">科研小助理 · 深圳大学酱味大鸡队呈现</footer>

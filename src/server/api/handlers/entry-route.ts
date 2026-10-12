@@ -5,8 +5,6 @@ import { generateEntryRoute } from "@/server/ai/entry-route-planner";
 import { jsonError, jsonOk, toErrorResponse } from "@/server/services/api-response";
 import { readSession } from "@/server/services/identity";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /**
  * 「入门前置路线」生成接口。
@@ -14,7 +12,7 @@ export const dynamic = "force-dynamic";
  * 输入一个兴趣方向 id（必须落在固定方向目录内），返回该方向的入门导览
  * （热点 / 实验 / 研究者 / 入门论文）。与问答一样调用付费模型，**必须带会话**。
  */
-export async function POST(request: Request) {
+export async function handleEntryRoute(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {

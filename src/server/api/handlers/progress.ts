@@ -3,8 +3,6 @@ import { jsonError, jsonOk, toErrorResponse } from "@/server/services/api-respon
 import { readSession } from "@/server/services/identity";
 import { readProgress, updateProgress } from "@/server/services/progress";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const VALID_STATUSES: readonly TaskProgressStatus[] = [
   "not-started",
@@ -46,7 +44,7 @@ function parseUpdateRequest(body: unknown): ProgressUpdateRequest | null {
   };
 }
 
-export async function GET(request: Request) {
+export async function handleProgressGet(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {
@@ -60,7 +58,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function handleProgressPost(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {

@@ -4,8 +4,6 @@ import { analyzeSpark } from "@/server/ai/spark-analyzer";
 import { jsonError, jsonOk, toErrorResponse } from "@/server/services/api-response";
 import { readSession } from "@/server/services/identity";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /**
  * 「奇思妙想」分析接口。
@@ -14,7 +12,7 @@ export const dynamic = "force-dynamic";
  * 亮点与兴趣方向。调用的是付费模型，所以与问答、测评一样**必须带会话**，
  * 身份只从服务端会话解析，请求体里的身份字段一律不采信（契约铁律 1）。
  */
-export async function POST(request: Request) {
+export async function handleSparks(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {

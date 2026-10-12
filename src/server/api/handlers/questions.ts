@@ -4,8 +4,6 @@ import { createQaProvider } from "@/server/resources/qa-provider";
 import { jsonError, jsonOk, toErrorResponse } from "@/server/services/api-response";
 import { readSession } from "@/server/services/identity";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /**
  * 科研问答（C 模块）。
@@ -19,7 +17,7 @@ export const dynamic = "force-dynamic";
  *
  * 身份只从服务端会话解析；请求体里的任何身份字段都不采信（契约铁律 1）。
  */
-export async function POST(request: Request) {
+export async function handleQuestions(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {

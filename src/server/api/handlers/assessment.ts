@@ -3,8 +3,6 @@ import { nextAssessmentStep } from "@/server/ai/assessment-coach";
 import { jsonError, jsonOk, toErrorResponse } from "@/server/services/api-response";
 import { readSession } from "@/server/services/identity";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const MODES: readonly AssessmentMode[] = ["full", "demo"];
 
@@ -73,7 +71,7 @@ function parseStepRequest(body: unknown): AssessmentStepRequest | null {
  * 已知残余风险：攻击者仍可以「反复新建匿名会话」来绕过这一层。真正的限流要靠
  * 平台侧（Vercel 的速率限制 / WAF）或落库计数，属于后续项，不在本轮。
  */
-export async function POST(request: Request) {
+export async function handleAssessmentNext(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {

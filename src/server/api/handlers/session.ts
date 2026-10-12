@@ -2,11 +2,9 @@ import type { SessionResponse } from "@/contracts";
 import { jsonError, jsonOk, toErrorResponse } from "@/server/services/api-response";
 import { getOrCreateSession, readSession } from "@/server/services/identity";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 /** 读取当前会话。没有就明确返回 401，**不隐式创建** —— 免得把"没身份"和"新身份"混为一谈。 */
-export async function GET(request: Request) {
+export async function handleSessionGet(request: Request) {
   try {
     const resolved = await readSession(request.headers.get("cookie"));
     if (!resolved) {
@@ -26,7 +24,7 @@ export async function GET(request: Request) {
  * 建立匿名会话（已有时原样返回，不重复下发 Cookie）。
  * 用户标识是服务端生成的，客户端不需要、也不应该提供任何身份信息。
  */
-export async function POST(request: Request) {
+export async function handleSessionPost(request: Request) {
   try {
     const issued = await getOrCreateSession(request.headers.get("cookie"));
     const data: SessionResponse = {

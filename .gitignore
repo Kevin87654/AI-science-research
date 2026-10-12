@@ -8,6 +8,8 @@ output/playwright/
 
 # ---------- Next.js 产物 ----------
 .next/
+# 改名留存的旧构建产物（沙箱内删不掉，只能 mv），不属于交付物
+.next-prev-*/
 out/
 build/
 dist/

@@ -16,9 +16,10 @@ import { useState } from "react";
 
 import type { InterestEntryRoute } from "@/contracts";
 import { InterestOverridePicker } from "@/features/interest/interest-override-picker";
+import { InterestRemoveButton } from "@/features/interest/interest-remove";
 import { ensureSession, postJson } from "@/features/shared/api-client";
 import { useIsClient, useLocalFlow } from "@/features/shared/use-local-flow";
-import { collectInterestTags, saveEntryRoute } from "@/features/spark/store";
+import { collectInterestTags, hideInterest, saveEntryRoute } from "@/features/spark/store";
 import { useSparkState } from "@/features/spark/use-sparks";
 
 const SECTION_LABELS = {
@@ -63,7 +64,7 @@ function EntryRouteCard({ route }: { route: InterestEntryRoute }) {
 export function EntryRouteSection() {
   const isClient = useIsClient();
   const flow = useLocalFlow();
-  const { sparks, entryRoutes, manualInterests } = useSparkState();
+  const { sparks, entryRoutes, manualInterests, hiddenInterestIds } = useSparkState();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -78,8 +79,14 @@ export function EntryRouteSection() {
     );
   }
 
-  // 方向来源 = 测评探测 + 奇思妙想 + 用户手动补充（尾部），与画像页共读同一份数据。
-  const directions = collectInterestTags(flow?.profile.interests ?? [], sparks, manualInterests);
+  // 方向来源 = 测评探测 + 奇思妙想 + 用户手动补充（尾部），被删去的隐藏，
+  // 与画像页共读同一份数据；每个 chip 右上角的红减号可把它从两个页面一起移除。
+  const directions = collectInterestTags(
+    flow?.profile.interests ?? [],
+    sparks,
+    manualInterests,
+    hiddenInterestIds,
+  );
 
   if (directions.length === 0) {
     return (
@@ -140,14 +147,16 @@ export function EntryRouteSection() {
       <div className="tool-chips">
         {directions.length > 1
           ? directions.map((direction) => (
-              <button
-                key={direction.id}
-                type="button"
-                className={direction.id === active.id ? "chip chip-active" : "chip"}
-                onClick={() => setSelectedId(direction.id)}
-              >
-                {direction.label}
-              </button>
+              <span className="interest-wrap" key={direction.id}>
+                <button
+                  type="button"
+                  className={direction.id === active.id ? "chip chip-active" : "chip"}
+                  onClick={() => setSelectedId(direction.id)}
+                >
+                  {direction.label}
+                </button>
+                <InterestRemoveButton label={direction.label} onRemove={() => hideInterest(direction.id)} />
+              </span>
             ))
           : null}
         <InterestOverridePicker existingIds={directions.map((direction) => direction.id)} />

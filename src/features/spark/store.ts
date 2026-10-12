@@ -32,6 +32,15 @@ export type SparkState = {
    * 保证两处列表同步。版本号没升：旧数据没有这个字段，读取时按空数组兜底。
    */
   manualInterests: InterestTag[];
+  /**
+   * 被用户「删去」的方向 id（两个页面的兴趣方向都可删除，第三轮迭代新增）。
+   *
+   * 用「隐藏」而不是真的改测评 / 奇思妙想的原始数据：原始数据是推导出来的，
+   * 删掉会破坏可解释性；隐藏只影响展示与汇总。在「展示所有方向」里重新点选
+   * 即可恢复（`pickInterest` 会同时把它从隐藏列表摘掉）。版本号仍不升：
+   * 旧数据没有这两个新字段，读取时按空数组兜底。
+   */
+  hiddenInterestIds: string[];
 };
 
 export type SaveOutcome = { ok: true } | { ok: false; message: string };
@@ -48,6 +57,7 @@ const EMPTY_STATE: SparkState = Object.freeze({
   sparks: [] as SparkEntry[],
   entryRoutes: {} as Record<string, InterestEntryRoute>,
   manualInterests: [] as InterestTag[],
+  hiddenInterestIds: [] as string[],
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -118,9 +128,14 @@ function isSparkState(value: unknown): value is SparkState {
   if (!Array.isArray(value.sparks) || !value.sparks.every(isSparkEntry)) return false;
   if (!isRecord(value.entryRoutes)) return false;
   if (!Object.values(value.entryRoutes).every(isEntryRoute)) return false;
-  // manualInterests 是第三轮后加的字段：旧版本写出的数据没有它，按"缺省 = 空"放行。
+  // manualInterests / hiddenInterestIds 是后加的字段：旧版本写出的数据没有它们，按"缺省 = 空"放行。
   if (value.manualInterests !== undefined) {
     if (!Array.isArray(value.manualInterests) || !value.manualInterests.every(isInterestTag)) return false;
+  }
+  if (value.hiddenInterestIds !== undefined) {
+    if (!Array.isArray(value.hiddenInterestIds) || !value.hiddenInterestIds.every((id) => typeof id === "string")) {
+      return false;
+    }
   }
   return true;
 }
@@ -155,8 +170,12 @@ export function getSparkStateSnapshot(): SparkState {
     try {
       const parsed: unknown = JSON.parse(raw);
       if (isSparkState(parsed)) {
-        // 旧数据没有 manualInterests，补成空数组，让下游不必再判空。
-        cachedState = parsed.manualInterests ? parsed : { ...parsed, manualInterests: [] };
+        // 旧数据没有 manualInterests / hiddenInterestIds，补成空数组，让下游不必再判空。
+        cachedState = {
+          ...parsed,
+          manualInterests: parsed.manualInterests ?? [],
+          hiddenInterestIds: parsed.hiddenInterestIds ?? [],
+        };
       }
     } catch {
       cachedState = null;
@@ -234,6 +253,39 @@ export function addManualInterest(tag: InterestTag): SaveOutcome {
   return writeState({ ...state, manualInterests: [...state.manualInterests, tag] });
 }
 
+/**
+ * 「删去」一个兴趣方向（画像页 / 入门前置路线上的红色减号）。
+ *
+ * 手动补充的：直接从列表移除；其余的（测评 / 奇思妙想推导）记入
+ * `hiddenInterestIds` 隐藏 —— 原始推导数据不动，保证可解释性。
+ * 两处页面共读这一份状态，删一次两边都消失。
+ */
+export function hideInterest(id: string): SaveOutcome {
+  const state = getSparkStateSnapshot();
+  return writeState({
+    ...state,
+    manualInterests: state.manualInterests.filter((tag) => tag.id !== id),
+    hiddenInterestIds: state.hiddenInterestIds.includes(id)
+      ? state.hiddenInterestIds
+      : [...state.hiddenInterestIds, id],
+  });
+}
+
+/**
+ * 选择器统一入口（「展示所有方向」里点选）：被隐藏的先恢复可见，
+ * 其余按手动补充追加到尾部。幂等。
+ */
+export function pickInterest(id: string, tag: InterestTag): SaveOutcome {
+  const state = getSparkStateSnapshot();
+  return writeState({
+    ...state,
+    hiddenInterestIds: state.hiddenInterestIds.filter((item) => item !== id),
+    manualInterests: state.manualInterests.some((item) => item.id === id)
+      ? state.manualInterests
+      : [...state.manualInterests, tag],
+  });
+}
+
 /** 缓存某个方向的入门前置路线（按方向 id 覆盖）。 */
 export function saveEntryRoute(route: InterestEntryRoute): SaveOutcome {
   const state = getSparkStateSnapshot();
@@ -254,7 +306,8 @@ export function deleteSpark(id: string): SaveOutcome {
 
 /**
  * 汇总兴趣方向（去重、保持插入顺序）：
- * 画像（测评探测）在前，奇思妙想其次，用户手动补充的最后（追加到尾部）。
+ * 画像（测评探测）在前，奇思妙想其次，用户手动补充的最后（追加到尾部），
+ * 被 `hiddenInterestIds` 隐藏的一律不出现。
  *
  * 学习路线的「入门前置路线」据此确定方向来源；画像页传 `sparks=[]` 复用
  * 同一个合并逻辑，两处列表因此保持一致。确定性纯函数，便于测试。
@@ -263,7 +316,9 @@ export function collectInterestTags(
   profileInterests: InterestTag[],
   sparks: SparkEntry[],
   manualInterests: InterestTag[] = [],
+  hiddenInterestIds: string[] = [],
 ): InterestTag[] {
+  const hidden = new Set(hiddenInterestIds);
   const byId = new Map<string, InterestTag>();
   for (const tag of profileInterests) byId.set(tag.id, tag);
   for (const entry of sparks) {
@@ -274,5 +329,5 @@ export function collectInterestTags(
   for (const tag of manualInterests) {
     if (!byId.has(tag.id)) byId.set(tag.id, tag);
   }
-  return Array.from(byId.values());
+  return Array.from(byId.values()).filter((tag) => !hidden.has(tag.id));
 }

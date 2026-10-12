@@ -302,6 +302,12 @@ export function RoadmapBoard({ sources }: { sources: readonly Source[] }) {
 
                 return (
                   <li className={`task task-${status}`} key={task.id}>
+                    {/* 左侧时间轴轨道 + 节点 */}
+                    <div className="task-rail">
+                      <div className={`task-node`} />
+                    </div>
+
+                    {/* 任务主卡片 */}
                     <div className="task-main">
                       <div className="task-head">
                         <h3>{task.title}</h3>

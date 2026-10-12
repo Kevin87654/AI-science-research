@@ -210,3 +210,15 @@ test("collectInterestTags：手动补充追加在尾部，已出现的方向不�
   // 画像原有的标签保持原对象（source 不被手动补充覆盖）
   assert.equal(result[0].source, "derived");
 });
+
+test("collectInterestTags：被隐藏的方向不出现，手动补充的隐藏后同样过滤", () => {
+  const profileInterests = [toInterestTag("it-ai")!, toInterestTag("it-data")!];
+  const manual = [{ id: "it-bio", label: "生物医学", source: "user-input" as const }];
+
+  // 隐藏画像推导的 it-ai + 手动补充的 it-bio
+  const result = collectInterestTags(profileInterests, [], manual, ["it-ai", "it-bio"]);
+  assert.deepEqual(
+    result.map((tag) => tag.id),
+    ["it-data"],
+  );
+});

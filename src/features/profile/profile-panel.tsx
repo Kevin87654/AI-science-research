@@ -13,18 +13,19 @@ import { useRouter } from "next/navigation";
 import { getQuestionnaire } from "@/features/assessment/question-bank";
 import { scoreAssessment } from "@/features/assessment/scoring";
 import { InterestOverridePicker } from "@/features/interest/interest-override-picker";
+import { InterestRemoveButton } from "@/features/interest/interest-remove";
 import { planRoadmap } from "@/features/roadmap/plan-roadmap";
 import { formatDateTime } from "@/features/shared/format";
 import { buildFlow, saveFlow, type LocalFlow } from "@/features/shared/local-bridge";
 import { useIsClient, useLocalFlow } from "@/features/shared/use-local-flow";
-import { collectInterestTags } from "@/features/spark/store";
+import { collectInterestTags, hideInterest } from "@/features/spark/store";
 import { useSparkState } from "@/features/spark/use-sparks";
 
 export function ProfilePanel() {
   const router = useRouter();
   const flow = useLocalFlow();
   const isClient = useIsClient();
-  const { manualInterests } = useSparkState();
+  const { manualInterests, hiddenInterestIds } = useSparkState();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -123,18 +124,20 @@ export function ProfilePanel() {
       </div>
 
       <article className="card">
-        <h2 className="card-title">兴趣方向</h2>
+        <h2 className="card-title">兴趣方向——由科研测评结果及奇思妙想生成</h2>
         {/*
-          列表 = 测评探测结果 + 用户手动补充（追加在尾部），
-          与学习路线页「入门前置路线」共读同一份 manualInterests，两处天然同步。
+          列表 = 测评探测结果 + 用户手动补充（追加在尾部），被删去的隐藏，
+          与学习路线页「入门前置路线」共读同一份状态，两处天然同步；
+          每个标签右上角的红减号可把它从两个页面一起移除。
         */}
         {(() => {
-          const interests = collectInterestTags(profile.interests, [], manualInterests);
+          const interests = collectInterestTags(profile.interests, [], manualInterests, hiddenInterestIds);
           return interests.length > 0 ? (
             <ul className="tag-list">
               {interests.map((interest) => (
-                <li className="tag" key={interest.id}>
+                <li className="tag interest-wrap" key={interest.id}>
                   {interest.label}
+                  <InterestRemoveButton label={interest.label} onRemove={() => hideInterest(interest.id)} />
                 </li>
               ))}
               <li>

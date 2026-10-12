@@ -225,16 +225,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .dock-item-active .dock-item-index { color: rgba(11, 13, 16, 0.5); }
 .dock-item-active:hover { background: rgba(11, 13, 16, 0.13); }
 /*
- * 引导序号（0/1/2/3）：大号加粗斜体数字（球衣号式），放在菜单项右侧、
- * 低透明度"虚化"呈现 —— 不抢菜单正文的视觉优先级；hover / 当前页时略微清晰。
+ * 引导序号（step 0/1/2/3）：大号加粗斜体数字（球衣号式）+"step" 小字（对齐数字左下角），
+ * 放在菜单项右侧、低透明度"虚化"呈现 —— 不抢菜单正文的视觉优先级；
+ * hover / 当前页时略微清晰。
  */
 .dock-item-hint {
-  flex: none; align-self: stretch; display: grid; place-items: center;
-  padding-right: 12px; line-height: 1; pointer-events: none;
-  font-size: 34px; font-weight: 800; font-style: italic; letter-spacing: -0.05em;
-  color: rgba(11, 13, 16, 0.14);
+  flex: none; align-self: stretch; display: inline-flex; align-items: flex-end;
+  padding: 0 12px 9px 0; line-height: 1; pointer-events: none;
+  font-weight: 800; font-style: italic; color: rgba(11, 13, 16, 0.14);
   transition: color 0.15s ease;
 }
+.dock-item-hint-step { font-size: 12px; letter-spacing: -0.02em; margin-right: 3px; }
+.dock-item-hint-num { font-size: 34px; letter-spacing: -0.05em; }
 .dock-item:hover .dock-item-hint { color: rgba(11, 13, 16, 0.3); }
 .dock-item-active .dock-item-hint { color: rgba(11, 13, 16, 0.42); }
 
@@ -345,10 +347,20 @@ h2 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.3; margin: 0 0 32px; le
   border: 1px solid var(--line); padding: 5px 14px; font-size: 14px;
   background: rgba(255, 255, 255, 0.8); color: var(--ink);
 }
-/* 「对测评结果不满意？」：触发 chip 与展开的方向选项排在同一行，可换行 */
+/* 「对测评结果不满意——展示所有方向」：触发 chip 与展开的方向选项排在同一行，可换行 */
 .interest-override { display: inline-flex; flex-wrap: wrap; gap: 9px; align-items: center; }
 .interest-override-options { display: inline-flex; flex-wrap: wrap; gap: 9px; }
 .interest-override-standalone { margin-top: 12px; }
+/* 兴趣方向标签容器：红色减号绝对定位在它的右上角 */
+.interest-wrap { position: relative; }
+.interest-remove {
+  position: absolute; top: -7px; right: -7px; z-index: 2;
+  width: 16px; height: 16px; padding: 0; border: 0; cursor: pointer;
+  display: grid; place-items: center; line-height: 1;
+  background: #d4352b; color: #fff; font-size: 14px; font-weight: 700;
+  font-family: inherit;
+}
+.interest-remove:hover { background: #b02a22; }
 .action-list { margin: 0; padding-left: 22px; }
 .action-list li { margin-bottom: 15px; }
 .action-list li::marker { color: rgba(11, 13, 16, 0.45); }

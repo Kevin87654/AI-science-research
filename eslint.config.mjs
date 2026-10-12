@@ -5,7 +5,7 @@ import nextTypescript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTypescript,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", ".learnbuddy/**", ".pnpm-store/**", "output/**", ".playwright-cli/**"]),
+  globalIgnores([".next/**", ".next-prev-*/**", "out/**", "build/**", "next-env.d.ts", ".learnbuddy/**", ".pnpm-store/**", "output/**", ".playwright-cli/**"]),
   {
     files: ["src/components/**/*.{ts,tsx}", "src/contracts/**/*.ts"],
     rules: {

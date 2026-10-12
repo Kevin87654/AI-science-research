@@ -225,17 +225,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .dock-item-active .dock-item-index { color: rgba(11, 13, 16, 0.5); }
 .dock-item-active:hover { background: rgba(11, 13, 16, 0.13); }
 /*
- * 引导序号（0/1/2/3）：虚化呈现 —— 低透明度 + 轻微模糊，不抢菜单正文的视觉优先级；
- * hover / 当前页时略微清晰，保持直角工业风（细边框小方块，无圆角无辉光）。
+ * 引导序号（0/1/2/3）：大号加粗斜体数字（球衣号式），放在菜单项右侧、
+ * 低透明度"虚化"呈现 —— 不抢菜单正文的视觉优先级；hover / 当前页时略微清晰。
  */
 .dock-item-hint {
-  flex: none; width: 18px; height: 18px; display: grid; place-items: center;
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px;
-  border: 1px solid currentColor; opacity: 0.22; filter: blur(0.4px);
-  transition: opacity 0.15s ease, filter 0.15s ease;
+  flex: none; align-self: stretch; display: grid; place-items: center;
+  padding-right: 12px; line-height: 1; pointer-events: none;
+  font-size: 34px; font-weight: 800; font-style: italic; letter-spacing: -0.05em;
+  color: rgba(11, 13, 16, 0.14);
+  transition: color 0.15s ease;
 }
-.dock-item:hover .dock-item-hint { opacity: 0.5; filter: none; }
-.dock-item-active .dock-item-hint { opacity: 0.6; filter: none; }
+.dock-item:hover .dock-item-hint { color: rgba(11, 13, 16, 0.3); }
+.dock-item-active .dock-item-hint { color: rgba(11, 13, 16, 0.42); }
 
 /* 对外联系方式：菜单最下方那一项（`margin-top: auto` 把它压到底部，中间留白给上面那列按钮） */
 .dock-contact-wrap { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line-soft); }

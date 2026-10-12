@@ -448,10 +448,95 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .stage-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
 .stage-index { display: grid; place-items: center; width: 34px; height: 34px; background: var(--ink); color: #fff; font-weight: 800; font-family: ui-monospace, Consolas, monospace; font-size: 15px; }
 .stage-title { font-size: 21px; margin: 2px 0 4px; color: var(--ink); }
-.task-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.task-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0; }
+
+/* ============================================================
+   动态路径时间轴（左侧轨道 + 节点 + 连接线）
+   ============================================================ */
 .task {
+  display: flex; gap: 1.25rem;
   border: 1px solid var(--line); padding: 20px 22px;
   background: rgba(255, 255, 255, 0.82);
+  position: relative;
+}
+
+/* 左侧轨道区域 */
+.task-rail {
+  width: var(--rail-w); flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+  position: relative;
+}
+
+/* 垂直连接线（伪元素绘制） */
+.task-rail::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - 1.25px); top: 24px; bottom: -8px;
+  width: 2.5px;
+  background: var(--line-strong);
+  transition: all 0.6s var(--ease);
+}
+
+/* 已完成/跳过 → 实线黑 */
+.task-completed .task-rail::before,
+.task-skipped .task-rail::before {
+  background: var(--ink); width: 2.5px;
+}
+
+/* 进行中 → 流动动画 */
+.task-in-progress .task-rail::before {
+  background: linear-gradient(180deg, var(--accent-deep), var(--accent));
+  width: 2.5px;
+  animation: path-flow-down 1s linear infinite;
+  background-size: 100% 20px;
+}
+
+@keyframes path-flow-down {
+  from { background-position: 0 0; }
+  to { background-position: 0 20px; }
+}
+
+/* 悬停高亮 */
+.task:hover .task-rail::before {
+  background: var(--ink); width: 3px;
+  box-shadow: 0 0 4px rgba(11, 13, 16, 0.15);
+}
+
+/* 节点 */
+.task-node {
+  width: 14px; height: 14px;
+  background: var(--surface);
+  border: 2px solid var(--line-strong);
+  transition: all 0.25s var(--ease);
+  position: relative; z-index: 2;
+  cursor: pointer; margin-top: 18px; flex-shrink: 0;
+}
+
+.task-completed .task-node {
+  background: var(--ink); border-color: var(--ink);
+}
+
+.task-in-progress .task-node {
+  background: var(--accent); border-color: var(--accent-deep);
+  animation: node-pulse 2s ease-in-out infinite;
+}
+
+.task-skipped .task-node {
+  background: transparent; border-style: dashed; opacity: 0.5;
+}
+
+.task:hover .task-node:not(.task-completed .task-node):not(.task-in-progress .task-node) {
+  border-color: var(--ink); transform: scale(1.3);
+}
+
+@keyframes node-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 233, 163, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 233, 163, 0); }
+}
+
+/* 任务主卡片（右侧） */
+.task-main {
+  flex: 1; margin-top: 6px;
 }
 .task-completed { border-color: var(--line-strong); border-left: 4px solid var(--ink); background: #fff; }
 .task-skipped { opacity: 0.6; }
@@ -595,6 +680,274 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   border: 1px solid var(--line); padding: 12px 16px; background: rgba(255, 255, 255, 0.72);
 }
 .entry-list strong { color: var(--ink); font-weight: 600; }
+
+/* =============================================================
+   动态视觉效果增强（v6 - 2026-10-12）
+   在保持工业风基调的前提下，增加：
+   ① 几何图形浮动动画
+   ② 渐变流动效果
+   ③ 鼠标跟随光效
+   ④ 3D 卡片悬停
+   ⑤ 粒子/节点装饰
+   ============================================================= */
+
+/* --- 自定义属性（用于 CSS 着色器式动画） --- */
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --float-x {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --float-y {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+/* --- 背景层增强动画 --- */
+
+/* 光晕缓慢呼吸 */
+.backdrop-glow {
+  animation: glow-breathe 8s ease-in-out infinite;
+}
+
+@keyframes glow-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* 网格微微蠕动 */
+.backdrop-grid {
+  animation: grid-shift 20s linear infinite;
+}
+
+@keyframes grid-shift {
+  0% { background-position: 0 0; }
+  100% { background-position: 76px 76px; }
+}
+
+/* --- 浮动几何装饰元素 --- */
+
+/* 几何容器（绝对定位，铺满背景） */
+.geo-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 浮动圆形 */
+.geo-circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(11, 13, 16, 0.08);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 233, 163, 0.06), transparent 70%);
+  animation: float-circle 20s ease-in-out infinite;
+}
+
+.geo-circle:nth-child(1) {
+  width: 300px; height: 300px;
+  top: 10%; right: 5%;
+  animation-delay: 0s;
+  animation-duration: 18s;
+}
+
+.geo-circle:nth-child(2) {
+  width: 200px; height: 200px;
+  top: 60%; right: 25%;
+  animation-delay: -5s;
+  animation-duration: 22s;
+}
+
+.geo-circle:nth-child(3) {
+  width: 150px; height: 150px;
+  top: 35%; right: 45%;
+  animation-delay: -10s;
+  animation-duration: 16s;
+}
+
+@keyframes float-circle {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(15px, -20px) scale(1.05); }
+  50% { transform: translate(-10px, 15px) scale(0.95); }
+  75% { transform: translate(20px, 10px) scale(1.02); }
+}
+
+/* 浮动线条 */
+.geo-line {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(11, 13, 16, 0.06), transparent);
+  height: 1px;
+  animation: float-line 15s ease-in-out infinite;
+}
+
+.geo-line:nth-child(4) {
+  width: 400px;
+  top: 25%; right: 10%;
+  transform: rotate(-15deg);
+  animation-delay: -3s;
+}
+
+.geo-line:nth-child(5) {
+  width: 300px;
+  top: 70%; right: 20%;
+  transform: rotate(8deg);
+  animation-delay: -8s;
+}
+
+@keyframes float-line {
+  0%, 100% { transform: rotate(-15deg) translateX(0); opacity: 0.4; }
+  50% { transform: rotate(-12deg) translateX(20px); opacity: 0.7; }
+}
+
+/* 点阵装饰 */
+.geo-dots {
+  position: absolute;
+  width: 100px; height: 100px;
+  top: 45%; right: 15%;
+  background-image: radial-gradient(circle, rgba(11, 13, 16, 0.12) 1px, transparent 1px);
+  background-size: 12px 12px;
+  animation: float-dots 12s ease-in-out infinite;
+}
+
+@keyframes float-dots {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(10px, -15px) rotate(2deg); }
+  66% { transform: translate(-8px, 10px) rotate(-1deg); }
+}
+
+/* --- 鼠标跟随光效（Hero 区域） --- */
+
+.hero-glow {
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 233, 163, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  transition: transform 0.3s ease-out;
+  will-change: transform;
+  z-index: 0;
+}
+
+/* --- 3D 卡片悬停效果 --- */
+
+.step-grid {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.step-card {
+  transform-style: preserve-3d;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s ease, background 0.18s ease;
+  transform-origin: center center;
+}
+
+.step-card:hover {
+  transform: translateZ(10px) rotateX(2deg) translateY(-4px);
+  box-shadow:
+    0 10px 30px rgba(11, 13, 16, 0.08),
+    0 1px 3px rgba(11, 13, 16, 0.04);
+}
+
+/* 任务卡片 3D 效果 */
+.task {
+  transform-style: preserve-3d;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s ease;
+  transform-origin: center center;
+}
+
+.task:hover {
+  transform: translateZ(8px) rotateX(1deg) translateY(-2px);
+  box-shadow:
+    0 8px 24px rgba(11, 13, 16, 0.06),
+    0 1px 2px rgba(11, 13, 16, 0.03);
+}
+
+/* 普通卡片 3D 效果 */
+.card {
+  transform-style: preserve-3d;
+  transition: transform 0.3s var(--ease), box-shadow 0.3s ease;
+  transform-origin: center center;
+}
+
+.card:hover {
+  transform: translateZ(5px) translateY(-2px);
+  box-shadow:
+    0 6px 20px rgba(11, 13, 16, 0.05),
+    0 1px 2px rgba(11, 13, 16, 0.03);
+}
+
+/* --- 滚动视差效果 --- */
+
+.parallax-slow {
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+
+.parallax-medium {
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+
+/* --- 粒子画布容器 --- */
+
+.particles-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* =============================================================
+   窄屏（禁用部分增强效果以提升性能）
+   ============================================================= */
+
+@media (hover: none), (max-width: 900px) {
+  .geo-circle,
+  .geo-line,
+  .geo-dots {
+    display: none;
+  }
+
+  .hero-glow {
+    display: none;
+  }
+
+  .step-card:hover,
+  .task:hover,
+  .card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .step-card,
+  .task,
+  .card {
+    transition: background 0.18s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop-glow,
+  .backdrop-grid,
+  .geo-circle,
+  .geo-line,
+  .geo-dots {
+    animation: none !important;
+  }
+
+  .step-card:hover,
+  .task:hover,
+  .card:hover {
+    transform: none !important;
+  }
+}
 
 /* =============================================================
    窄屏

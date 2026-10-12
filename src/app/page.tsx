@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
+import { MouseGlow } from "@/components/mouse-glow";
 
 /**
  * 首页的三步。
@@ -33,7 +34,8 @@ export default function HomePage() {
     <>
       <SiteHeader />
       <main id="main-content" className="container">
-        <section className="hero" aria-labelledby="hero-title">
+        <section className="hero" aria-labelledby="hero-title" style={{ position: "relative", overflow: "hidden" }}>
+          <MouseGlow />
           <p className="eyebrow">给刚刚开始探索科研的你</p>
           <h1 id="hero-title">科研，<br />从一个问题开始。</h1>
           <p className="hero-description">

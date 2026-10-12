@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 import { LogoMark } from "./logo";
 import { CONTACT_LINK, NAV_ITEMS } from "./nav-items";
+import { GeoDecorations } from "./geo-decorations";
+import { ParticlesBackground } from "./particles-background";
 
 /**
  * 全站外壳：固定背景层 + 左侧**一列**菜单。
@@ -30,6 +32,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className={isHome ? "backdrop-photo backdrop-photo-home" : "backdrop-photo backdrop-photo-page"} />
         <div className="backdrop-glow" />
         <div className="backdrop-grid" />
+        <GeoDecorations />
+        <ParticlesBackground />
         <div className="backdrop-veil" />
       </div>
 

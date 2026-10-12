@@ -12,15 +12,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getQuestionnaire } from "@/features/assessment/question-bank";
 import { scoreAssessment } from "@/features/assessment/scoring";
+import { InterestOverridePicker } from "@/features/interest/interest-override-picker";
 import { planRoadmap } from "@/features/roadmap/plan-roadmap";
 import { formatDateTime } from "@/features/shared/format";
 import { buildFlow, saveFlow, type LocalFlow } from "@/features/shared/local-bridge";
 import { useIsClient, useLocalFlow } from "@/features/shared/use-local-flow";
+import { collectInterestTags } from "@/features/spark/store";
+import { useSparkState } from "@/features/spark/use-sparks";
 
 export function ProfilePanel() {
   const router = useRouter();
   const flow = useLocalFlow();
   const isClient = useIsClient();
+  const { manualInterests } = useSparkState();
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -120,19 +124,34 @@ export function ProfilePanel() {
 
       <article className="card">
         <h2 className="card-title">兴趣方向</h2>
-        {profile.interests.length > 0 ? (
-          <ul className="tag-list">
-            {profile.interests.map((interest) => (
-              <li className="tag" key={interest.id}>
-                {interest.label}
+        {/*
+          列表 = 测评探测结果 + 用户手动补充（追加在尾部），
+          与学习路线页「入门前置路线」共读同一份 manualInterests，两处天然同步。
+        */}
+        {(() => {
+          const interests = collectInterestTags(profile.interests, [], manualInterests);
+          return interests.length > 0 ? (
+            <ul className="tag-list">
+              {interests.map((interest) => (
+                <li className="tag" key={interest.id}>
+                  {interest.label}
+                </li>
+              ))}
+              <li>
+                <InterestOverridePicker existingIds={interests.map((interest) => interest.id)} />
               </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">
-            你还没有勾选具体方向。这不影响开始 —— 先读一篇真实论文，比反复纠结选哪个更有效。
-          </p>
-        )}
+            </ul>
+          ) : (
+            <>
+              <p className="muted">
+                你还没有勾选具体方向。这不影响开始 —— 先读一篇真实论文，比反复纠结选哪个更有效。
+              </p>
+              <div className="interest-override-standalone">
+                <InterestOverridePicker existingIds={[]} />
+              </div>
+            </>
+          );
+        })()}
       </article>
 
       <article className="card">

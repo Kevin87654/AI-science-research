@@ -192,3 +192,21 @@ test("collectInterestTags：画像在前、奇思妙想在后，按 id 去重", 
     ["it-ai", "it-data", "it-hci"],
   );
 });
+
+test("collectInterestTags：手动补充追加在尾部，已出现的方向不重复占位", () => {
+  const profileInterests = [toInterestTag("it-ai")!];
+  const manual = [
+    { id: "it-security", label: "网络安全", source: "user-input" as const },
+    // 与画像重复：不应在尾部再出现一次
+    { id: "it-ai", label: "人工智能", source: "user-input" as const },
+    { id: "it-bio", label: "生物医学", source: "user-input" as const },
+  ];
+
+  const result = collectInterestTags(profileInterests, [], manual);
+  assert.deepEqual(
+    result.map((tag) => tag.id),
+    ["it-ai", "it-security", "it-bio"],
+  );
+  // 画像原有的标签保持原对象（source 不被手动补充覆盖）
+  assert.equal(result[0].source, "derived");
+});

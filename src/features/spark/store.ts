@@ -25,6 +25,13 @@ export type SparkState = {
   sparks: SparkEntry[];
   /** 方向 id → 已生成的入门前置路线（缓存，避免重复调模型）。 */
   entryRoutes: Record<string, InterestEntryRoute>;
+  /**
+   * 用户手动补充的兴趣方向（「对测评结果不满意？」入口，第三轮新增）。
+   *
+   * 画像页的「兴趣方向」与学习路线页的「入门前置路线」都从这一份读，
+   * 保证两处列表同步。版本号没升：旧数据没有这个字段，读取时按空数组兜底。
+   */
+  manualInterests: InterestTag[];
 };
 
 export type SaveOutcome = { ok: true } | { ok: false; message: string };
@@ -40,6 +47,7 @@ const EMPTY_STATE: SparkState = Object.freeze({
   schemaVersion: SCHEMA_VERSION,
   sparks: [] as SparkEntry[],
   entryRoutes: {} as Record<string, InterestEntryRoute>,
+  manualInterests: [] as InterestTag[],
 });
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -109,7 +117,12 @@ function isSparkState(value: unknown): value is SparkState {
   if (value.schemaVersion !== SCHEMA_VERSION) return false;
   if (!Array.isArray(value.sparks) || !value.sparks.every(isSparkEntry)) return false;
   if (!isRecord(value.entryRoutes)) return false;
-  return Object.values(value.entryRoutes).every(isEntryRoute);
+  if (!Object.values(value.entryRoutes).every(isEntryRoute)) return false;
+  // manualInterests 是第三轮后加的字段：旧版本写出的数据没有它，按"缺省 = 空"放行。
+  if (value.manualInterests !== undefined) {
+    if (!Array.isArray(value.manualInterests) || !value.manualInterests.every(isInterestTag)) return false;
+  }
+  return true;
 }
 
 function storage(): Storage | null {
@@ -141,7 +154,10 @@ export function getSparkStateSnapshot(): SparkState {
   if (raw) {
     try {
       const parsed: unknown = JSON.parse(raw);
-      if (isSparkState(parsed)) cachedState = parsed;
+      if (isSparkState(parsed)) {
+        // 旧数据没有 manualInterests，补成空数组，让下游不必再判空。
+        cachedState = parsed.manualInterests ? parsed : { ...parsed, manualInterests: [] };
+      }
     } catch {
       cachedState = null;
     }
@@ -206,6 +222,18 @@ export function createSparkEntry(text: string, analysis: SparkAnalysis): SparkEn
   };
 }
 
+/**
+ * 手动补充一个兴趣方向（「对测评结果不满意？」入口）。
+ *
+ * 同 id 已存在时不重复添加（幂等，返回 ok）；新方向一律**追加到尾部**，
+ * 和用户「加在最后」的预期一致。画像页与入门前置路线共读这一份，天然同步。
+ */
+export function addManualInterest(tag: InterestTag): SaveOutcome {
+  const state = getSparkStateSnapshot();
+  if (state.manualInterests.some((item) => item.id === tag.id)) return { ok: true };
+  return writeState({ ...state, manualInterests: [...state.manualInterests, tag] });
+}
+
 /** 缓存某个方向的入门前置路线（按方向 id 覆盖）。 */
 export function saveEntryRoute(route: InterestEntryRoute): SaveOutcome {
   const state = getSparkStateSnapshot();
@@ -225,16 +253,26 @@ export function deleteSpark(id: string): SaveOutcome {
 }
 
 /**
- * 汇总兴趣方向（去重、保持插入顺序）：画像（测评探测）在前，奇思妙想在后。
+ * 汇总兴趣方向（去重、保持插入顺序）：
+ * 画像（测评探测）在前，奇思妙想其次，用户手动补充的最后（追加到尾部）。
  *
- * 学习路线的「入门前置路线」据此确定方向来源；确定性纯函数，便于测试。
+ * 学习路线的「入门前置路线」据此确定方向来源；画像页传 `sparks=[]` 复用
+ * 同一个合并逻辑，两处列表因此保持一致。确定性纯函数，便于测试。
  */
-export function collectInterestTags(profileInterests: InterestTag[], sparks: SparkEntry[]): InterestTag[] {
+export function collectInterestTags(
+  profileInterests: InterestTag[],
+  sparks: SparkEntry[],
+  manualInterests: InterestTag[] = [],
+): InterestTag[] {
   const byId = new Map<string, InterestTag>();
   for (const tag of profileInterests) byId.set(tag.id, tag);
   for (const entry of sparks) {
     if (!entry.analysis) continue;
     for (const tag of entry.analysis.interests) byId.set(tag.id, tag);
+  }
+  // 手动补充只补「还没出现过」的方向：测评/奇思妙想已推导出的不重复占位。
+  for (const tag of manualInterests) {
+    if (!byId.has(tag.id)) byId.set(tag.id, tag);
   }
   return Array.from(byId.values());
 }

@@ -3,15 +3,21 @@
  *
  * 左侧自动呼出菜单（`app-shell.tsx`）与顶栏（`site-header.tsx`）都从这里取，
  * 避免两处维护同一份列表导致漂移。顺序即完整闭环：
- * 成长首页 → 科研测评 → 我的画像 → 奇思妙想 → 学习路线 → 教师资料 → 网站收录 → 科研问答。
+ * 成长首页 → 科研测评 → 奇思妙想 → 我的画像 → 学习路线 → 教师资料 → 网站收录 → 科研问答。
+ *
+ * `hint` 是给新用户的引导序号（第三轮新增）：0 = 从这里开始，
+ * 1 = 先产出兴趣方向（测评 / 奇思妙想），2 = 再看结果（画像 / 路线），3 = 其余自由探索。
+ * 侧栏里以虚化样式渲染，纯引导、不参与交互。
  */
 export type NavItem = {
   href: string;
   label: string;
   /** 侧栏里的英文副标题，纯装饰 */
   sub: string;
-  /** 编号，纯装饰（01…06） */
+  /** 编号，纯装饰（01…08） */
   index: string;
+  /** 引导序号（0/1/2/3），虚化显示在菜单项右侧 */
+  hint: string;
   icon: React.ReactNode;
 };
 
@@ -37,6 +43,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "成长首页",
     sub: "Overview",
     index: "01",
+    hint: "0",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M4 10.5 12 4l8 6.5" />
@@ -50,6 +57,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "科研测评",
     sub: "Assessment",
     index: "02",
+    hint: "1",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <circle cx="12" cy="12" r="8" />
@@ -59,22 +67,11 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    href: "/profile",
-    label: "我的画像",
-    sub: "Profile",
-    index: "03",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
-        <path d="M12 3.5 20 8v8l-8 4.5L4 16V8z" />
-        <circle cx="12" cy="12" r="2.6" />
-      </svg>
-    ),
-  },
-  {
     href: "/sparks",
     label: "奇思妙想",
     sub: "Sparks",
-    index: "04",
+    index: "03",
+    hint: "1",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M9 18h6" />
@@ -84,10 +81,24 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/profile",
+    label: "我的画像",
+    sub: "Profile",
+    index: "04",
+    hint: "2",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+        <path d="M12 3.5 20 8v8l-8 4.5L4 16V8z" />
+        <circle cx="12" cy="12" r="2.6" />
+      </svg>
+    ),
+  },
+  {
     href: "/roadmap",
     label: "学习路线",
     sub: "Roadmap",
     index: "05",
+    hint: "2",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M5 19V8.5A3.5 3.5 0 0 1 8.5 5H13" />
@@ -103,6 +114,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "教师资料",
     sub: "Faculty",
     index: "06",
+    hint: "3",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v13H6.5A2.5 2.5 0 0 0 4 19.5z" />
@@ -115,6 +127,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "网站收录",
     sub: "Directory",
     index: "07",
+    hint: "3",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M14 4h6v6" />
@@ -128,6 +141,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: "科研问答",
     sub: "Q&A",
     index: "08",
+    hint: "3",
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
         <path d="M20 12.5c0 3.6-3.6 6.5-8 6.5a9.6 9.6 0 0 1-2.6-.35L5 20.5l.9-3.2A6.6 6.6 0 0 1 4 12.5C4 8.9 7.6 6 12 6s8 2.9 8 6.5z" />

@@ -5,7 +5,8 @@
  *
  * 放在学习路线页的**最上面**：在做现有学习路线（科研能力训练）之前，
  * 先对用户感兴趣的方向建立整体认知 —— 领域热点、著名实验、研究者、入门论文。
- * 方向来自测评的兴趣探测（画像）与「奇思妙想」的自由文本分析，两者合并去重。
+ * 方向来自测评的兴趣探测（画像）、「奇思妙想」的自由文本分析，
+ * 以及用户通过「对测评结果不满意？」手动补充的方向（追加在尾部），三者合并去重。
  *
  * 内容性质与红线：这份导览是 AI 生成的**开放知识**，我们没有人工核验过的来源库
  * 可引用，所以**不挂核验来源、不参与任务进度**，并显式标注「AI 生成、未经核验」，
@@ -14,6 +15,7 @@
 import { useState } from "react";
 
 import type { InterestEntryRoute } from "@/contracts";
+import { InterestOverridePicker } from "@/features/interest/interest-override-picker";
 import { ensureSession, postJson } from "@/features/shared/api-client";
 import { useIsClient, useLocalFlow } from "@/features/shared/use-local-flow";
 import { collectInterestTags, saveEntryRoute } from "@/features/spark/store";
@@ -61,7 +63,7 @@ function EntryRouteCard({ route }: { route: InterestEntryRoute }) {
 export function EntryRouteSection() {
   const isClient = useIsClient();
   const flow = useLocalFlow();
-  const { sparks, entryRoutes } = useSparkState();
+  const { sparks, entryRoutes, manualInterests } = useSparkState();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -76,7 +78,8 @@ export function EntryRouteSection() {
     );
   }
 
-  const directions = collectInterestTags(flow?.profile.interests ?? [], sparks);
+  // 方向来源 = 测评探测 + 奇思妙想 + 用户手动补充（尾部），与画像页共读同一份数据。
+  const directions = collectInterestTags(flow?.profile.interests ?? [], sparks, manualInterests);
 
   if (directions.length === 0) {
     return (
@@ -87,6 +90,9 @@ export function EntryRouteSection() {
           先通过一次科研测评、或在「奇思妙想」里写点自己的想法，确定你感兴趣的方向后，
           这里会为它生成一份入门导览：领域热点、著名实验、研究者与入门论文。
         </p>
+        <div className="tool-chips">
+          <InterestOverridePicker existingIds={[]} />
+        </div>
       </section>
     );
   }
@@ -131,20 +137,21 @@ export function EntryRouteSection() {
         </div>
       </div>
 
-      {directions.length > 1 ? (
-        <div className="tool-chips">
-          {directions.map((direction) => (
-            <button
-              key={direction.id}
-              type="button"
-              className={direction.id === active.id ? "chip chip-active" : "chip"}
-              onClick={() => setSelectedId(direction.id)}
-            >
-              {direction.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      <div className="tool-chips">
+        {directions.length > 1
+          ? directions.map((direction) => (
+              <button
+                key={direction.id}
+                type="button"
+                className={direction.id === active.id ? "chip chip-active" : "chip"}
+                onClick={() => setSelectedId(direction.id)}
+              >
+                {direction.label}
+              </button>
+            ))
+          : null}
+        <InterestOverridePicker existingIds={directions.map((direction) => direction.id)} />
+      </div>
 
       {problem ? (
         <p className="error-text" role="alert">

@@ -224,6 +224,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 .dock-item-active .dock-item-icon { color: var(--ink); }
 .dock-item-active .dock-item-index { color: rgba(11, 13, 16, 0.5); }
 .dock-item-active:hover { background: rgba(11, 13, 16, 0.13); }
+/*
+ * 引导序号（0/1/2/3）：虚化呈现 —— 低透明度 + 轻微模糊，不抢菜单正文的视觉优先级；
+ * hover / 当前页时略微清晰，保持直角工业风（细边框小方块，无圆角无辉光）。
+ */
+.dock-item-hint {
+  flex: none; width: 18px; height: 18px; display: grid; place-items: center;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 11px;
+  border: 1px solid currentColor; opacity: 0.22; filter: blur(0.4px);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+.dock-item:hover .dock-item-hint { opacity: 0.5; filter: none; }
+.dock-item-active .dock-item-hint { opacity: 0.6; filter: none; }
 
 /* 对外联系方式：菜单最下方那一项（`margin-top: auto` 把它压到底部，中间留白给上面那列按钮） */
 .dock-contact-wrap { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line-soft); }
@@ -332,6 +344,10 @@ h2 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.3; margin: 0 0 32px; le
   border: 1px solid var(--line); padding: 5px 14px; font-size: 14px;
   background: rgba(255, 255, 255, 0.8); color: var(--ink);
 }
+/* 「对测评结果不满意？」：触发 chip 与展开的方向选项排在同一行，可换行 */
+.interest-override { display: inline-flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+.interest-override-options { display: inline-flex; flex-wrap: wrap; gap: 9px; }
+.interest-override-standalone { margin-top: 12px; }
 .action-list { margin: 0; padding-left: 22px; }
 .action-list li { margin-bottom: 15px; }
 .action-list li::marker { color: rgba(11, 13, 16, 0.45); }

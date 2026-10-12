@@ -10,8 +10,12 @@
  * 交互与降级：
  * - 分析走服务端（付费模型，需会话），失败时如实提示、**不清空输入框**，用户重试即可；
  * - 成功才落本地记录列表，失败不留半条「没有结果」的记录。
+ *
+ * 输入方式（第三轮迭代新增）：除「写点什么」外，页面还露出「画点什么」（图片）
+ * 与「说点什么」（语音）两个入口 —— 它们**只是占位**：图片 / 语音解析还没实现，
+ * 用户一旦尝试提交，弹窗如实告知「现版本暂不支持非文字输入」，不留半条假记录。
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { SparkAnalysis, SparkEntry } from "@/contracts";
 import { ensureSession, postJson } from "@/features/shared/api-client";
@@ -70,6 +74,18 @@ export function SparkPanel() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /** 非文字输入（图片 / 语音）的提示弹窗是否显示。 */
+  const [notice, setNotice] = useState(false);
+
+  // 弹窗打开时按 Esc 也能关。
+  useEffect(() => {
+    if (!notice) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNotice(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [notice]);
 
   if (!isClient) {
     return (
@@ -165,6 +181,57 @@ export function SparkPanel() {
           <p className="muted small">分析会调用 AI，通常需要十几秒，请稍等。</p>
         </div>
       </article>
+
+      {/* 占位入口：图片 / 语音输入方式已在页面上露出，但解析能力还没实现。
+          用户一旦尝试提交（点输入区或按钮），弹窗如实告知，不留假记录。 */}
+      <article className="card">
+        <h2 className="card-title">画点什么</h2>
+        <p className="muted small">
+          拍下手画的草图、思维导图或灵感涂鸦，让 AI 看图猜方向。（画板输入即将上线）
+        </p>
+        <button type="button" className="spark-stub" onClick={() => setNotice(true)}>
+          点击选择 / 拖入图片
+        </button>
+        <div className="form-actions">
+          <button type="button" className="button" onClick={() => setNotice(true)}>
+            分析一下
+          </button>
+        </div>
+      </article>
+
+      <article className="card">
+        <h2 className="card-title">说点什么</h2>
+        <p className="muted small">
+          直接说出你的灵感和问题，AI 听完后帮你找方向。（语音输入即将上线）
+        </p>
+        <button type="button" className="spark-stub" onClick={() => setNotice(true)}>
+          点击开始说话
+        </button>
+        <div className="form-actions">
+          <button type="button" className="button" onClick={() => setNotice(true)}>
+            分析一下
+          </button>
+        </div>
+      </article>
+
+      {notice ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setNotice(false)}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="提示"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="modal-text">网站现版本暂不支持非文字输入</p>
+            <div className="form-actions">
+              <button type="button" className="button" onClick={() => setNotice(false)}>
+                知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {sparks.length > 0 ? (
         <>

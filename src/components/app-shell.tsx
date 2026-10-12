@@ -63,9 +63,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <span className="dock-item-icon" aria-hidden="true">{item.icon}</span>
                   <span className="dock-item-label">{item.label}</span>
-                  {/* 引导序号（step 0/1/2/3）：虚化装饰，提示新用户的推荐探索顺序 */}
+                  {/* 引导序号（0/1/2/3）：虚化装饰，提示新用户的推荐探索顺序；
+                      "step" 前缀只保留在首项（成长首页），其余项只有数字 */}
                   <span className="dock-item-hint" aria-hidden="true">
-                    <span className="dock-item-hint-step">step</span>
+                    {item.href === "/dashboard" ? <span className="dock-item-hint-step">step</span> : null}
                     <span className="dock-item-hint-num">{item.hint}</span>
                   </span>
                 </Link>

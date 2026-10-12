@@ -91,7 +91,7 @@ export function EntryRouteSection() {
   if (directions.length === 0) {
     return (
       <section className="panel">
-        <p className="eyebrow">入门前置路线</p>
+        <p className="eyebrow">入门前置路线——你的兴趣方向入门指南</p>
         <h2 className="card-title">还没有兴趣方向</h2>
         <p className="muted">
           先通过一次科研测评、或在「奇思妙想」里写点自己的想法，确定你感兴趣的方向后，
@@ -136,7 +136,7 @@ export function EntryRouteSection() {
     <section className="panel entry-route-panel" aria-labelledby="entry-route-title">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">入门前置路线</p>
+          <p className="eyebrow">入门前置路线——你的兴趣方向入门指南</p>
           <h1 id="entry-route-title">先认识「{active.label}」这个方向</h1>
           <p className="lead">
             在动手做科研之前，先对这个方向建立整体认知 —— 看完这份导览，再往下做学习路线会更顺。

@@ -66,7 +66,7 @@ export function ToolDirectory({ directory }: { directory: ToolDirectory }) {
     <div className="panel tool-panel">
       <header className="panel-header">
         <div>
-          <h1>科研工具箱</h1>
+          <h1>网站收录</h1>
         </div>
       </header>
 

@@ -8,6 +8,7 @@ export type * from "./api";
 export type * from "./assessment";
 export type * from "./catalog";
 export type * from "./common";
+export type * from "./graduation";
 export type * from "./identity";
 export type * from "./knowledge";
 export type * from "./profile";

@@ -21,25 +21,45 @@ import { ParticlesBackground } from "./particles-background";
  * ⚠️ 用 `:focus-visible` 而不是 `:focus-within`：鼠标点过的链接也会留下焦点，
  *    用 `:focus-within` 会导致鼠标移开后菜单仍然不收（要再点一下别处），已被反馈过。
  * ⚠️ 触屏没有 hover，去掉那两个按钮后移动端就没有展开入口了（已知代价，用户明确要求）。
+ *
+ * 2026-11-10 新增「无侧栏」路由：`/`（身份入口）、`/student`、`/mentor`。
+ * 这三页是**独立入口与工作台**，不是科研内容页 —— 把测试 / 测评 / 路线那套菜单摆进去，
+ * 只会让人以为"学生端也能做科研测评"。它们自带顶栏（见 `workspace-bar.tsx`），
+ * 所以外壳只留背景层，正文不再让开左侧图标栏。
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  // 首页与科研小助理首页都铺那张大图；其余页面用很淡的线稿。
+  const isHome = pathname === "/" || pathname === "/assistant";
+  const isBare = pathname === "/" || pathname === "/student" || pathname === "/mentor";
+
+  const backdrop = (
+    <div className="backdrop" aria-hidden="true">
+      <div className={isHome ? "backdrop-photo backdrop-photo-home" : "backdrop-photo backdrop-photo-page"} />
+      <div className="backdrop-glow" />
+      <div className="backdrop-grid" />
+      <GeoDecorations />
+      <ParticlesBackground />
+      <div className="backdrop-veil" />
+    </div>
+  );
+
+  if (isBare) {
+    return (
+      <>
+        {backdrop}
+        <div className="page-shell page-shell-bare">{children}</div>
+      </>
+    );
+  }
 
   return (
     <>
-      <div className="backdrop" aria-hidden="true">
-        <div className={isHome ? "backdrop-photo backdrop-photo-home" : "backdrop-photo backdrop-photo-page"} />
-        <div className="backdrop-glow" />
-        <div className="backdrop-grid" />
-        <GeoDecorations />
-        <ParticlesBackground />
-        <div className="backdrop-veil" />
-      </div>
+      {backdrop}
 
       <aside className="dock" aria-label="功能菜单">
         <div className="dock-inner">
-          <Link className="dock-brand" href="/" aria-label="科研小助理首页">
+          <Link className="dock-brand" href="/" aria-label="返回身份选择">
             <span className="dock-brand-mark">
               <LogoMark size={44} />
             </span>

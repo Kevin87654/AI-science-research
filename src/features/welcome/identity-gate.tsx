@@ -27,7 +27,8 @@ interface IdentityCard {
   index: string;
   title: string;
   en: string;
-  description: string;
+  /** 部分卡片（如科研萌新）不需要描述文案。 */
+  description?: string;
   meta: string[];
   cta: string;
 }
@@ -38,7 +39,7 @@ const IDENTITIES: readonly IdentityCard[] = [
     index: "01",
     title: "大四学生",
     en: "GRADUATING STUDENT",
-    description: "学校的时间节点和你的进度放在两条时间轴上，随时知道下一步该交什么、自己走到哪了。",
+    description: "深大计软学生毕设管理工具入口",
     meta: ["需要登录", "双时间轴", "可自行添加节点"],
     cta: "登录并追踪进度",
   },
@@ -47,7 +48,7 @@ const IDENTITIES: readonly IdentityCard[] = [
     index: "02",
     title: "导师",
     en: "MENTOR",
-    description: "按学号搜索并把学生加进自己的小组，查看每个人记录的进度与最近一次更新。",
+    description: "课题组学生管理终端入口",
     meta: ["需要登录", "小组管理", "组内进度"],
     cta: "登录并管理学生",
   },
@@ -56,7 +57,6 @@ const IDENTITIES: readonly IdentityCard[] = [
     index: "03",
     title: "科研萌新",
     en: "NEWCOMER",
-    description: "原来那个科研小助理：两分钟测评、成长首页、学习路线、教师资料与带来源的科研问答。",
     meta: ["无需登录", "原有功能"],
     cta: "直接进入",
   },
@@ -84,11 +84,9 @@ export function IdentityGate() {
     <div className="gate">
       <header className="gate-top container">
         <LogoLockup size={40} />
-        <span className="badge gate-badge">毕业设计 · 身份入口</span>
       </header>
 
       <main id="main-content" className="container gate-main">
-        <p className="eyebrow">毕业设计 · 从这里开始</p>
         <h1 className="gate-title">选择你的身份</h1>
 
         {session ? (
@@ -112,7 +110,9 @@ export function IdentityGate() {
                 <span className="gate-card-index">{identity.index}</span>
                 <span className="gate-card-role">{identity.title}</span>
                 <span className="gate-card-en">{identity.en}</span>
-                <span className="gate-card-desc">{identity.description}</span>
+                {identity.description ? (
+                  <span className="gate-card-desc">{identity.description}</span>
+                ) : null}
                 <span className="gate-card-meta">
                   {identity.meta.map((item) => (
                     <span className="gate-chip" key={item}>

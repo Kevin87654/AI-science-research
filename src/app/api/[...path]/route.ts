@@ -11,6 +11,7 @@ import {
   handleGraduationMessagesPost,
 } from "@/server/api/handlers/graduation-messages";
 import { jsonError } from "@/server/services/api-response";
+import { handleWorkflowGet, handleWorkflowPost } from "@/server/api/handlers/graduation-workflow";
 
 /**
  * 统一 API 入口（catch-all）。
@@ -40,6 +41,8 @@ export async function GET(request: Request, { params }: RouteParams) {
       return handleProgressGet(request);
     case "graduation/messages":
       return handleGraduationMessagesGet(request);
+    case "graduation/workflow":
+      return handleWorkflowGet(request);
     default:
       return jsonError("NOT_FOUND", "接口不存在。");
   }
@@ -67,6 +70,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       return handleGraduationSummary(request);
     case "graduation/messages":
       return handleGraduationMessagesPost(request);
+    case "graduation/workflow":
+      return handleWorkflowPost(request);
     default:
       return jsonError("NOT_FOUND", "接口不存在。");
   }

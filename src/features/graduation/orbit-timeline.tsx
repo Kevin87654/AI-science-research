@@ -30,6 +30,8 @@ interface OrbitTimelineProps {
   composer: ReactNode;
   /** 星球下方的 AI 进度助手。 */
   assistant?: ReactNode;
+  /** 点击「会面」节点时回到联系页；不传则只读展示。 */
+  onOpenMeeting?: () => void;
   onRemove: (nodeId: string) => void;
 }
 
@@ -138,7 +140,16 @@ function CardWindow({
   );
 }
 
-export function OrbitTimeline({ milestones, nodes, today, next, composer, assistant, onRemove }: OrbitTimelineProps) {
+export function OrbitTimeline({
+  milestones,
+  nodes,
+  today,
+  next,
+  composer,
+  assistant,
+  onOpenMeeting,
+  onRemove,
+}: OrbitTimelineProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLButtonElement | null>(null);
@@ -321,30 +332,43 @@ export function OrbitTimeline({ milestones, nodes, today, next, composer, assist
               label={`我的进度，共 ${nodes.length} 条，滚轮翻看`}
               count={nodes.length + 1}
             >
-              {nodes.map((node) => (
-                <li
-                  className="orbit-node"
-                  key={node.id}
-                  style={{ "--i": 0 } as CSSProperties}
-                >
-                  <div className="orbit-node-meta">
-                    <time className="orbit-node-date" dateTime={node.date}>
-                      {formatIsoDate(node.date)}
-                    </time>
-                    <span className="orbit-node-flag">自己记录</span>
-                  </div>
-                  <h4 className="orbit-node-title">{node.title}</h4>
-                  {node.note ? <p className="orbit-node-note">{node.note}</p> : null}
-                  <button
-                    className="orbit-node-remove"
-                    type="button"
-                    onClick={() => onRemove(node.id)}
-                    aria-label={`删除节点：${node.title}`}
+              {nodes.map((node) => {
+                const isMeeting = node.id.startsWith("meeting:");
+                return (
+                  <li
+                    className="orbit-node"
+                    key={node.id}
+                    style={{ "--i": 0 } as CSSProperties}
                   >
-                    删除
-                  </button>
-                </li>
-              ))}
+                    <div className="orbit-node-meta">
+                      <time className="orbit-node-date" dateTime={node.date}>
+                        {formatIsoDate(node.date)}
+                      </time>
+                      <span className={isMeeting ? "orbit-node-flag orbit-node-flag-meeting" : "orbit-node-flag"}>
+                        {isMeeting ? "会面" : "自己记录"}
+                      </span>
+                    </div>
+                    <h4 className="orbit-node-title">{node.title}</h4>
+                    {node.note ? <p className="orbit-node-note">{node.note}</p> : null}
+                    {isMeeting ? (
+                      onOpenMeeting ? (
+                        <button className="orbit-node-open" type="button" onClick={onOpenMeeting}>
+                          查看会面
+                        </button>
+                      ) : null
+                    ) : (
+                      <button
+                        className="orbit-node-remove"
+                        type="button"
+                        onClick={() => onRemove(node.id)}
+                        aria-label={`删除节点：${node.title}`}
+                      >
+                        删除
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
               <li className="orbit-node-add-item">
                 <button className="orbit-node-add" type="button" onClick={openComposer}>
                   <span className="orbit-node-add-mark" aria-hidden="true">

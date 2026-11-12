@@ -57,11 +57,15 @@ export function StudentNodeTimeline({
   nodes,
   onRemove,
   emptyHint,
+  canRemove,
+  onOpen,
 }: {
   nodes: readonly StudentNode[];
   /** 传了才显示删除按钮 —— 导师看学生进度时是只读的。 */
   onRemove?: (nodeId: string) => void;
   emptyHint: string;
+  canRemove?: (node: StudentNode) => boolean;
+  onOpen?: () => void;
 }) {
   if (nodes.length === 0) {
     return (
@@ -84,7 +88,8 @@ export function StudentNodeTimeline({
           <div className="tl-body">
             <div className="tl-node-head">
               <h3 className="tl-title">{node.title}</h3>
-              {onRemove ? (
+              {node.id.startsWith("meeting:")&&onOpen?<button className="button-ghost" onClick={onOpen}>查看会面与解惑</button>:null}
+              {onRemove&&(!canRemove||canRemove(node)) ? (
                 <button
                   className="tl-remove"
                   type="button"

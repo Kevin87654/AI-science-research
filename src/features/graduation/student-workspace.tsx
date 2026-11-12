@@ -15,7 +15,7 @@
  */
 import { useEffect, useState } from "react";
 
-import type { StudentNode } from "@/contracts";
+import type { GraduationMilestone, StudentNode } from "@/contracts";
 import { findAccountById } from "@/features/auth/demo-accounts";
 import { useRoleSession } from "@/features/auth/use-role-session";
 import { useIsClient } from "@/features/shared/use-local-flow";
@@ -29,15 +29,123 @@ import { mentorIdForStudent } from "./contact";
 import { OrbitTimeline } from "./orbit-timeline";
 import { ProgressAiPanel } from "./progress-ai-panel";
 import { UPCOMING_FEATURES, UpcomingFeature } from "./upcoming-feature";
+
 import { formatIsoDate, latestByDate, pickNextMilestone, toLocalIsoDate } from "./timeline-meta";
 import { useMentorGroupsState } from "./use-mentor-groups";
 import { useStudentNodesState } from "./use-student-nodes";
+import { useWorkflow } from "./use-workflow";
+import { shanghaiDate, type MeetingRequest } from "./workflow-model";
 import { WorkspaceBar } from "./workspace-bar";
 
 type FormMessage = { kind: "error" | "ok"; text: string } | null;
 
 const CONTACT_LEAD =
   "进度汇报、卡住的问题都可以直接发给导师。消息每 2 秒同步一次；演示版暂存在服务端内存，重启后会清空，接数据库后改为持久保存。";
+
+const MEETING_STATUS: Record<string, string> = {
+  confirmed: "会面已确认",
+  completed: "会面已完成",
+};
+
+function stampMeeting(value: string): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Shanghai",
+  }).format(new Date(value));
+}
+
+/** 把已确认 / 已完成的会面并进个人进度；会面节点只读，id 用 `meeting:` 前缀区分。 */
+function mergeMeetingNodes(
+  nodes: readonly StudentNode[],
+  meetings: readonly MeetingRequest[],
+): StudentNode[] {
+  const meetingNodes = meetings
+    .filter(
+      (meeting) =>
+        (meeting.status === "confirmed" || meeting.status === "completed") &&
+        meeting.proposals.length > 0,
+    )
+    .map((meeting) => {
+      const proposal = meeting.proposals[meeting.proposals.length - 1];
+      return {
+        id: `meeting:${meeting.id}`,
+        date: shanghaiDate(proposal.start),
+        title: `会面 · ${meeting.title}`,
+        note: `${stampMeeting(proposal.start)} · ${proposal.place} · ${MEETING_STATUS[meeting.status] ?? "会面"}`,
+        createdAt: meeting.updatedAt,
+      } satisfies StudentNode;
+    });
+
+  return [...nodes, ...meetingNodes].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+  );
+}
+
+function StudentTimelineView({
+  accountId,
+  mentorId,
+  mentorName,
+  nodes,
+  next,
+  today,
+  composer,
+  onRemove,
+  onOpenContact,
+}: {
+  accountId: string;
+  mentorId: string;
+  mentorName: string;
+  nodes: readonly StudentNode[];
+  next: GraduationMilestone | null;
+  today: string;
+  composer: React.ReactNode;
+  onRemove: (nodeId: string) => void;
+  onOpenContact: () => void;
+}) {
+  const { state } = useWorkflow(accountId, mentorId, "student");
+  const timelineNodes = mergeMeetingNodes(nodes, state.meetings);
+
+  return (
+    <section className="timeline-section" aria-labelledby="timeline-title">
+      <div className="section-head">
+        <p className="eyebrow">毕业设计 · 流态旋转时间轴</p>
+        <h2 className="section-title" id="timeline-title">
+          双轨时间轴
+        </h2>
+        <p className="section-note">
+          左半边是你自己记录的进度（已确认的会面也会并进来），右半边是学院统一节点，两条轨道绕着中间的「今天」转动。
+          两侧各显示 3 个节点，滚轮上下翻看；学院节点只保留日期、状态与标题，点击后在浮层里展开完整说明与材料清单。
+        </p>
+      </div>
+
+      <OrbitTimeline
+        milestones={SCHOOL_MILESTONES}
+        nodes={timelineNodes}
+        today={today}
+        next={next}
+        composer={composer}
+        assistant={
+          <ProgressAiPanel
+            studentId={accountId}
+            mentorId={mentorId}
+            mentorName={mentorName}
+            nodes={nodes}
+            today={today}
+            onOpenContact={onOpenContact}
+          />
+        }
+        onOpenMeeting={onOpenContact}
+        onRemove={onRemove}
+      />
+
+      <p className="gate-note">
+        演示版：自己记录的节点保存在本机浏览器里（换设备或清缓存会丢）。
+        接入登录与数据库后改为保存到你的账号下，学院节点仍由学院统一维护。
+      </p>
+    </section>
+  );
+}
 
 export function StudentWorkspace() {
   const isClient = useIsClient();
@@ -49,7 +157,7 @@ export function StudentWorkspace() {
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [message, setMessage] = useState<FormMessage>(null);
-  /** 合并后只剩时间轴与联系导师两块；默认落在时间轴上。 */
+  /** 默认落在时间轴上；其余是联系导师与两个待开发入口。 */
   const [view, setView] = useState<StudentView>("timeline");
 
   // 切换侧栏视图后回到顶部：否则从很长的时间轴切到「联系导师」，
@@ -209,51 +317,28 @@ export function StudentWorkspace() {
         </section>
 
         {view === "timeline" ? (
-          <section className="timeline-section" aria-labelledby="timeline-title">
-            <div className="section-head">
-              <p className="eyebrow">毕业设计 · 流态旋转时间轴</p>
-              <h2 className="section-title" id="timeline-title">
-                双轨时间轴
-              </h2>
-              <p className="section-note">
-                左半边是你自己记录的进度，右半边是学院统一节点，两条轨道绕着中间的「今天」转动。
-                两侧各显示 3 个节点，滚轮上下翻看；学院节点只保留日期、状态与标题，点击后在浮层里展开完整说明与材料清单。
-              </p>
-            </div>
-
-            <OrbitTimeline
-              milestones={SCHOOL_MILESTONES}
-              nodes={nodes}
-              today={today}
-              next={next}
-              composer={composer}
-              assistant={
-                <ProgressAiPanel
-                  studentId={accountId}
-                  mentorId={mentorId}
-                  mentorName={mentor?.name ?? "导师"}
-                  nodes={nodes}
-                  today={today}
-                  onOpenContact={() => setView("contact")}
-                />
-              }
-              onRemove={(nodeId) => {
-                removeNode(accountId, nodeId);
-                setMessage(null);
-              }}
-            />
-
-            <p className="gate-note">
-              演示版：自己记录的节点保存在本机浏览器里（换设备或清缓存会丢）。
-              接入登录与数据库后改为保存到你的账号下，学院节点仍由学院统一维护。
-            </p>
-          </section>
+          <StudentTimelineView
+            accountId={accountId}
+            mentorId={mentorId}
+            mentorName={mentor?.name ?? "导师"}
+            nodes={nodes}
+            next={next}
+            today={today}
+            composer={composer}
+            onOpenContact={() => setView("contact")}
+            onRemove={(nodeId) => {
+              if (nodeId.startsWith("meeting:")) return;
+              removeNode(accountId, nodeId);
+              setMessage(null);
+            }}
+          />
         ) : view === "contact" ? (
           <section className="contact-section" aria-label="联系导师">
             <ContactPanel
               role="student"
               studentId={accountId}
               studentName={session.name}
+              nodes={nodes}
               mentorId={mentorId}
               mentorName={mentor?.name ?? "导师"}
             />

@@ -4,9 +4,12 @@
  * 学生端的左侧图标栏（与全站图标栏同一套形态：收起 72px、移入展开、选中项左侧 3px 黑条）。
  *
  * 为什么放在学生页里、而不是塞进 `app-shell.tsx`：
- * 这里的三个选项**不是路由**，是同一页里的视图切换（学院节点 / 我的进度 / 联系导师），
+ * 这里的两个选项**不是路由**，是同一页里的视图切换（毕设时间轴 / 联系导师），
  * 状态必须和页面内容共享。放进外壳就要把状态提到外壳或用 URL 参数，
  * 前者让外壳变成业务组件，后者让一个纯视图切换产生可被收藏的历史记录 —— 都不划算。
+ *
+ * 2026-11-12：原来的「我的毕设进度」与「学院毕设节点」合并成一块流态旋转时间轴
+ * （左半边我的进度、右半边学院节点），侧栏因此从三项收成两项。
  *
  * 视觉沿用首页那套：logo 在顶部、选项一列、底部留一个"返回身份选择"的出口。
  */
@@ -14,28 +17,20 @@ import Link from "next/link";
 
 import { LogoMark } from "@/components/logo";
 
-/** `school` = 学院统一节点；`mine` = 学生自己记录的节点；`contact` = 联系导师。 */
-export type StudentView = "school" | "mine" | "contact";
+/** `timeline` = 双轨时间轴（我的进度 + 学院节点）；`contact` = 联系导师。 */
+export type StudentView = "timeline" | "contact";
 
 const TABS: readonly { key: StudentView; label: string; icon: React.ReactNode }[] = [
   {
-    key: "mine",
-    label: "我的毕设进度",
+    key: "timeline",
+    label: "毕设时间轴",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 6h3M5 12h3M5 18h3" />
-        <path d="M11 6h8M11 12h8M11 18h8" />
-      </svg>
-    ),
-  },
-  {
-    key: "school",
-    label: "学院毕设节点",
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 4v16" />
-        <path d="M6 5h11l-2 3.5L17 12H6" />
-        <path d="M3.5 20h6" />
+        <path d="M7 3.5v17" />
+        <circle cx="7" cy="7" r="1.4" />
+        <circle cx="7" cy="12" r="1.4" />
+        <circle cx="7" cy="17" r="1.4" />
+        <path d="M11.5 7H19M11.5 12H19M11.5 17H16" />
       </svg>
     ),
   },

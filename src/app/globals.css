@@ -1451,3 +1451,733 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   .section-head { margin-bottom: 18px; }
   .tl-remove { padding: 3px 8px; }
 }
+
+/* =============================================================
+   流态旋转时间轴（v10 · 2026-11-12 · PC 版）
+   左「我的进度」/ 中间「今天」星球 + AI / 右「学院节点」。
+   两侧各一屏 3 个节点，滚轮翻看；转动只发生在容器上（≤8°）。
+   ============================================================= */
+.orbit-stage {
+  --turn: 0deg;
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --orbit-card-h: 128px;
+  --orbit-card-gap: 10px;
+  position: relative;
+  margin-top: 24px;
+  border: 1px solid var(--ink);
+  background:
+    linear-gradient(rgba(11, 13, 16, 0.05) 1px, transparent 1px) 0 0 / 100% 64px,
+    linear-gradient(90deg, rgba(11, 13, 16, 0.05) 1px, transparent 1px) 0 0 / 64px 100%,
+    radial-gradient(44% 38% at 50% 30%, rgba(255, 233, 163, 0.4), rgba(255, 233, 163, 0) 72%),
+    #f7f8f6;
+  box-shadow: 0 30px 80px rgba(11, 13, 16, 0.07);
+  /* 轨道环 3D 旋转后的包围盒会超出舞台，裁掉避免整页横向滚动。
+     clip 不产生滚动容器。 */
+  overflow: clip;
+}
+.orbit-stage::before,
+.orbit-stage::after {
+  content: "";
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--ink);
+  pointer-events: none;
+  z-index: 2;
+}
+.orbit-stage::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.orbit-stage::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
+
+.orbit-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-areas: "mine core school";
+  grid-template-columns: minmax(0, 1fr) minmax(310px, 1fr) minmax(0, 1.08fr);
+  gap: clamp(20px, 2.6vw, 40px);
+  align-items: start;
+  padding: 34px clamp(20px, 2.6vw, 36px) 28px;
+}
+
+/* ---- 两栏 ---- */
+.orbit-col {
+  min-width: 0;
+  transition: transform 600ms var(--ease);
+}
+.orbit-col-mine {
+  grid-area: mine;
+  transform: perspective(1600px) rotateY(calc(5deg + var(--turn) + var(--tilt-y))) rotateX(var(--tilt-x));
+  transform-origin: right center;
+}
+.orbit-col-school {
+  grid-area: school;
+  transform: perspective(1600px) rotateY(calc(-5deg + var(--turn) + var(--tilt-y))) rotateX(var(--tilt-x));
+  transform-origin: left center;
+}
+
+.orbit-col-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.orbit-col-kicker {
+  margin: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--faint);
+}
+.orbit-col-title {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.orbit-col-count {
+  flex: none;
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+.orbit-add {
+  flex: none;
+  border: 1px solid var(--ink);
+  background: transparent;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.orbit-add:hover { background: var(--ink); color: #fff; }
+
+/* ---- 左半场：记录表单 ---- */
+.orbit-composer {
+  margin: 0 0 12px;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+.orbit-composer[hidden] { display: none; }
+.orbit-composer .node-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.orbit-composer .field { display: grid; gap: 4px; min-width: 0; }
+.orbit-composer .field-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+}
+.orbit-composer .field-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.orbit-composer .field-input:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+  border-color: transparent;
+}
+.orbit-composer .node-form-actions { display: flex; }
+.orbit-composer .button-small { width: 100%; }
+.orbit-composer .node-message {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.orbit-composer .node-message-ok { padding: 6px 9px; }
+
+/* ---- 一屏三个节点的滚轮窗口 ---- */
+.orbit-window {
+  display: grid;
+  gap: var(--orbit-card-gap);
+  height: calc(var(--orbit-card-h) * 3 + var(--orbit-card-gap) * 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  outline-offset: 4px;
+}
+.orbit-window::-webkit-scrollbar { display: none; }
+.orbit-window > li {
+  height: var(--orbit-card-h);
+  animation: orbit-rise 500ms var(--ease) backwards;
+}
+.orbit-window > li:nth-child(2) { animation-delay: 60ms; }
+.orbit-window > li:nth-child(3) { animation-delay: 120ms; }
+.orbit-window:focus-visible { outline: 2px solid var(--ink); }
+
+.orbit-window-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+/* ---- 左半场：自己的节点卡 ---- */
+.orbit-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 12px 14px 12px 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(11, 13, 16, 0.05);
+  transition: border-color 0.2s, transform 0.25s var(--ease), box-shadow 0.25s;
+}
+.orbit-node::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 3px;
+  height: 18px;
+  background: var(--ink);
+}
+.orbit-node:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(11, 13, 16, 0.09);
+}
+.orbit-node-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+  padding-right: 40px;
+}
+.orbit-node-date {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.orbit-node-flag {
+  border: 1px solid var(--accent-a45);
+  background: var(--accent-a25);
+  padding: 0 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.orbit-node-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+  padding-right: 44px;
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+.orbit-node-note {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 6px 0 0;
+  padding-right: 4px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.orbit-node-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 10.5px;
+  color: var(--faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s, border-color 0.2s, background 0.2s;
+}
+.orbit-node:hover .orbit-node-remove,
+.orbit-node-remove:focus-visible { opacity: 1; }
+.orbit-node-remove:hover {
+  color: #7f1d17;
+  border-color: rgba(179, 38, 30, 0.5);
+  background: #fdecea;
+}
+
+.orbit-node-add {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed var(--line-strong);
+  background: rgba(255, 255, 255, 0.45);
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.orbit-node-add-mark { font-size: 20px; line-height: 1; }
+.orbit-node-add:hover { border-color: var(--ink); background: var(--accent-a10); color: var(--ink); }
+
+.orbit-empty {
+  padding: 20px 16px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(255, 255, 255, 0.6);
+}
+.orbit-empty-title { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; }
+.orbit-empty-text { margin: 0 0 12px; font-size: 12.5px; line-height: 1.7; color: var(--muted); }
+
+/* ---- 右半场：学院节点（只放关键信息） ---- */
+.orbit-milestone {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 14px;
+  gap: 9px;
+  align-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 12px 12px 12px 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.25s var(--ease), box-shadow 0.25s;
+}
+.orbit-milestone:hover {
+  border-color: var(--ink);
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(11, 13, 16, 0.1);
+}
+.orbit-milestone.is-active {
+  border-color: var(--ink);
+  background: var(--accent-a25);
+  box-shadow: inset 3px 0 0 var(--ink);
+}
+.orbit-milestone-index {
+  padding-top: 1px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+}
+.orbit-milestone-main { min-width: 0; }
+.orbit-milestone-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.orbit-milestone-date { font-size: 11px; font-weight: 700; color: var(--muted); }
+.orbit-milestone-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+.orbit-milestone-open {
+  padding-top: 1px;
+  font-size: 11.5px;
+  color: var(--faint);
+  transition: color 0.2s, transform 0.2s;
+}
+.orbit-milestone:hover .orbit-milestone-open { color: var(--ink); transform: translate(1px, -1px); }
+
+.orbit-badge {
+  display: inline-block;
+  border: 1px solid var(--line);
+  padding: 0 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.orbit-badge-upcoming { border-color: var(--accent-a45); background: var(--accent-a25); color: var(--ink); }
+.orbit-badge-today { border-color: var(--ink); background: var(--ink); color: #fff; }
+.orbit-badge-overdue { border-style: dashed; color: var(--faint); }
+.orbit-badge-undated { border-style: dashed; color: var(--faint); }
+
+/* ---- 中间：今天 / 轨道环 / AI ---- */
+.orbit-core {
+  grid-area: core;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 2px;
+}
+.orbit-core-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(230px, 21vw, 278px);
+  aspect-ratio: 1;
+}
+.orbit-halo {
+  position: absolute;
+  inset: 2%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 233, 163, 0.72) 0%, rgba(255, 233, 163, 0.22) 46%, rgba(255, 233, 163, 0) 70%);
+  filter: blur(6px);
+  pointer-events: none;
+  animation: orbit-breathe 9s ease-in-out infinite;
+}
+.orbit-rings {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.orbit-ring {
+  position: absolute;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+.orbit-ring-a {
+  width: 100%;
+  height: 100%;
+  border-style: dashed;
+  border-color: rgba(11, 13, 16, 0.3);
+  transform: rotateX(72deg) rotateZ(12deg);
+  animation: orbit-spin 42s linear infinite;
+}
+.orbit-ring-b {
+  width: 74%;
+  height: 74%;
+  border-color: rgba(206, 172, 52, 0.62);
+  transform: rotateX(68deg) rotateZ(-30deg);
+  animation: orbit-spin-reverse 28s linear infinite;
+}
+.orbit-ring-c {
+  width: 118%;
+  height: 118%;
+  border-color: rgba(11, 13, 16, 0.14);
+  transform: rotateX(76deg) rotateZ(60deg);
+}
+.orbit-orb {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  width: clamp(138px, 12.5vw, 166px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: #fff;
+  text-align: center;
+  background: radial-gradient(circle at 34% 28%, #3d4147 0%, #191b1f 44%, #0b0d10 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 233, 163, 0.7),
+    0 0 60px rgba(247, 221, 133, 0.6),
+    0 26px 60px rgba(11, 13, 16, 0.28),
+    inset -12px -16px 34px rgba(255, 233, 163, 0.16);
+}
+.orbit-orb-kicker {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.34em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.orbit-orb-date {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.orbit-caption { margin: 0; max-width: 260px; text-align: center; }
+.orbit-caption-label {
+  display: block;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--faint);
+}
+.orbit-caption-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.orbit-caption-due {
+  display: inline-block;
+  margin-top: 6px;
+  border: 1px solid var(--accent-a45);
+  background: var(--accent-a25);
+  padding: 0 7px;
+  font-size: 10.5px;
+}
+
+/* AI 进度助手：放在星球下方，收窄成中栏宽度 */
+.orbit-ai { width: 100%; max-width: 340px; }
+.orbit-ai .ai-panel {
+  margin: 0;
+  padding: 12px 12px 10px;
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.92);
+}
+.orbit-ai .ai-panel-head { gap: 8px; }
+.orbit-ai .eyebrow { font-size: 10px; gap: 6px; }
+.orbit-ai .ai-panel-title { margin: 2px 0 4px; font-size: 14px; line-height: 1.4; }
+.orbit-ai .ai-panel-note { font-size: 10.5px; line-height: 1.55; }
+.orbit-ai .ai-badge { padding: 2px 6px; font-size: 9px; }
+.orbit-ai .ai-actions { margin-top: 8px; gap: 6px; }
+.orbit-ai .ai-actions .button-small,
+.orbit-ai .ai-actions .button-ghost {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11.5px;
+}
+.orbit-ai .ai-note { font-size: 10.5px; }
+.orbit-ai .ai-headline { font-size: 13px; }
+.orbit-ai .ai-list { padding-left: 16px; font-size: 11.5px; line-height: 1.6; }
+.orbit-ai .ai-summary-body { max-height: 180px; font-size: 11.5px; line-height: 1.6; }
+.orbit-ai .ai-sent { font-size: 11px; }
+.orbit-ai .ai-result { margin-top: 10px; padding-top: 10px; }
+.orbit-ai .ai-source { font-size: 10px; }
+.orbit-ai .ai-error { font-size: 11px; }
+
+/* ---- 节点详情浮层 ---- */
+.orbit-dialog-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: 24px;
+}
+.orbit-dialog-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 13, 16, 0.44);
+  animation: orbit-fade 0.2s ease;
+}
+.orbit-dialog {
+  position: relative;
+  width: min(560px, 100%);
+  max-width: 100%;
+  max-height: min(80vh, 760px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: 26px 28px 20px;
+  border: 1px solid var(--ink);
+  background: var(--bg);
+  box-shadow: 0 30px 90px rgba(11, 13, 16, 0.42);
+  animation: orbit-dialog-in 0.26s var(--ease);
+}
+.orbit-dialog::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent-deep);
+}
+.orbit-dialog:focus { outline: none; }
+.orbit-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.orbit-dialog-kicker {
+  margin: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  color: var(--faint);
+}
+.orbit-dialog-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.orbit-dialog-close:hover { background: var(--ink); color: #fff; }
+.orbit-dialog-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+.orbit-dialog-date { font-size: 12.5px; color: var(--muted); }
+.orbit-dialog-title {
+  margin: 10px 0 12px;
+  font-size: clamp(22px, 3vw, 27px);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+.orbit-dialog-detail {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: var(--muted);
+}
+.orbit-dialog-block { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.orbit-dialog-block-title {
+  margin: 0 0 8px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--faint);
+}
+.orbit-dialog-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.orbit-material {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 3px 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.orbit-dialog-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.orbit-nav {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.orbit-nav:hover:not(:disabled) { background: var(--ink); color: #fff; }
+.orbit-nav:disabled { border-style: dashed; color: var(--faint); cursor: default; }
+.orbit-dialog-note { font-size: 11.5px; color: var(--faint); text-align: center; }
+
+@keyframes orbit-rise {
+  from { opacity: 0; transform: translateY(12px); }
+}
+@keyframes orbit-spin {
+  to { transform: rotateX(72deg) rotateZ(372deg); }
+}
+@keyframes orbit-spin-reverse {
+  to { transform: rotateX(68deg) rotateZ(-390deg); }
+}
+@keyframes orbit-dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+}
+@keyframes orbit-fade {
+  from { opacity: 0; }
+}
+@keyframes orbit-breathe {
+  0%, 100% { opacity: 0.82; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@media (hover: none) {
+  .orbit-node-remove { opacity: 1; }
+}
+
+/* PC 为准；窄屏只做不塌的兜底 */
+@media (max-width: 1080px) {
+  .orbit-grid {
+    grid-template-areas:
+      "core core"
+      "mine school";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .orbit-core { grid-column: 1 / -1; padding-bottom: 6px; }
+  .orbit-core-visual { width: clamp(220px, 40vw, 280px); }
+  .orbit-col-mine {
+    transform: perspective(1600px) rotateY(calc(2deg + var(--tilt-y))) rotateX(var(--tilt-x));
+  }
+  .orbit-col-school {
+    transform: perspective(1600px) rotateY(calc(-2deg + var(--tilt-y))) rotateX(var(--tilt-x));
+  }
+}
+
+@media (max-width: 820px) {
+  .orbit-grid {
+    grid-template-areas:
+      "core"
+      "mine"
+      "school";
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 22px 16px 26px;
+  }
+  .orbit-core-visual { width: min(250px, 72vw); }
+  .orbit-col-mine,
+  .orbit-col-school { transform: none; }
+  .orbit-stage::before,
+  .orbit-stage::after { display: none; }
+  .orbit-dialog-layer { padding: 14px; }
+  .orbit-dialog { padding: 22px 20px 16px; max-height: 86vh; }
+  .orbit-dialog-foot { flex-wrap: wrap; }
+  .orbit-dialog-note { order: 3; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-col,
+  .orbit-node,
+  .orbit-milestone,
+  .orbit-milestone-open { transform: none !important; }
+  .orbit-ring,
+  .orbit-halo { animation: none !important; }
+  .orbit-window > li,
+  .orbit-dialog,
+  .orbit-dialog-veil { animation: none !important; }
+}

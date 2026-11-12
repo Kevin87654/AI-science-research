@@ -132,6 +132,19 @@
 
 三条产品红线已经固化在类型里：`currentAvailability` 不猜名额、`editorial` 与 `pendingConfirmation` 分开、`Answer.status` 表达的是**证据覆盖程度而不是模型置信度**。
 
+### `graduation.ts` —— 毕设时间轴与联系（2026-11-12）
+
+| 类型 | 说明 |
+|---|---|
+| `GraduationMilestone` | 学院统一节点；`dueDate` 只在原表给出具体某一天时非空，区间/寒假/「开学第一周」为 `null` |
+| `StudentNode` | 学生自己记录的节点；`note` 可以为 `null` |
+| `GraduationReminder` / `GraduationSummary` | AI 提醒 / 成果汇总；`source: "ai" \| "rule"` 表明是否由模型生成 |
+| `GraduationAiRequest` | AI 接口入参；节点由客户端带上（还不在数据库） |
+| `ChatMessage` | 学生 ↔ 导师消息；`kind: "text" \| "summary"`，`senderRole` 声明发送方 |
+
+> ⚠️ 两个演示期边界：AI 接口的 `studentId` 与消息的 `senderRole` 都来自客户端，
+> 服务端只做形状校验；接真实登录后必须改成从会话解析。
+
 ---
 
 ## 四、HTTP 返回约定

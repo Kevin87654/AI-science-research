@@ -15,7 +15,7 @@ import type { InterestEntryRoute, InterestTag } from "@/contracts";
 import { INTEREST_DIRECTION_DESCRIPTIONS, toInterestTag } from "@/features/interest/directions";
 import { parseEntryRoute } from "@/features/roadmap/entry-route";
 
-import { askText, isAiConfigured } from "./codebuddy";
+import { askText, isAiConfigured } from "./client";
 import { resolveAiTimeoutMs } from "./config";
 
 /** 与问答 / 奇思妙想同量级的生成任务，沿用 120 秒下限。 */
@@ -68,9 +68,9 @@ export async function generateEntryRoute(directionId: string): Promise<InterestE
 
   const result = await askText(buildPrompt(direction), {
     timeoutMs: resolveTimeoutMs(),
-    // 内容生成类任务用 fast-model：default（auto）会间歇「只吐 thinking、不吐正文」
-    // 导致 `code=empty`（见 codebuddy.ts 文件头诊断），fast-model 稳定且快得多。
-    model: "fast-model",
+    // 生成一份短导览，不需要长推理；low 更快，也避免正文被 reasoning 挤掉。
+    reasoningEffort: "low",
+    maxTokens: 2500,
   });
   if (!result.ok) {
     console.error(`[ai] 入门前置路线降级：code=${result.code}`);

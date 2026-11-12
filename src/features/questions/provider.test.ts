@@ -93,7 +93,7 @@ test("AI 成功时 decidedBy 为 ai", async () => {
   });
 
   const result = await provider.answer("深大有哪些研究知识图谱的老师？");
-  assert.equal(provider.kind, "codebuddy-ai");
+  assert.equal(provider.kind, "deepseek-ai");
   assert.equal(result.decidedBy, "ai");
   assert.equal(result.answer.answer, "模型答的。");
 });
@@ -110,9 +110,9 @@ test("AI 返回 null（证据不足/结构不过/超时）→ 回落规则，且
 
   const result = await provider.answer("姚俊梅的邮箱是什么");
   assert.equal(called, 1);
-  // ⭐ 这一条是重点：链路 kind 是 codebuddy-ai，但这条回答是规则给的，
+  // ⭐ 这一条是重点：链路 kind 是 deepseek-ai，但这条回答是规则给的，
   //    decidedBy 必须如实写 rules，否则界面会把规则回答标成"模型生成"。
-  assert.equal(provider.kind, "codebuddy-ai");
+  assert.equal(provider.kind, "deepseek-ai");
   assert.equal(result.decidedBy, "rules");
   assert.match(result.answer.answer, /yaojunmei@szu.edu.cn/);
 });

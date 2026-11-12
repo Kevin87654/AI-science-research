@@ -34,7 +34,7 @@ import { deepFreeze } from "../resources/deep-freeze.ts";
 import { validateDataset } from "../resources/validate-dataset.ts";
 import { answerQuestion } from "./engine.ts";
 
-export type QaProviderKind = "curated-rules" | "codebuddy-ai";
+export type QaProviderKind = "curated-rules" | "deepseek-ai";
 
 export interface QaProvider {
   /** 这条链路**可能**用到的实现。仅供排查，**不要拿它当回答来源的标注**。 */
@@ -84,7 +84,7 @@ export function createAiFirstProvider(options: {
   const { ai, fallback } = options;
 
   return Object.freeze({
-    kind: "codebuddy-ai" as const,
+    kind: "deepseek-ai" as const,
     async answer(question: string): Promise<QuestionResult> {
       try {
         const viaAi = await ai(question);

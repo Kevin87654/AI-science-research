@@ -127,6 +127,20 @@ export function studentsOf(state: MentorGroupsState | null, mentorId: string): s
   return state.groups[mentorId] ?? [];
 }
 
+/**
+ * 反向查：某个学生属于哪位导师的小组。
+ *
+ * 演示期只有一个导师，正常只会命中一个；真接多导师后如果出现多条关系，
+ * 这里按对象键的插入顺序返回第一个 —— 界面上另做"切换导师"比在这里猜更诚实。
+ */
+export function mentorOfStudent(state: MentorGroupsState | null, studentId: string): string | null {
+  if (!state) return null;
+  for (const [mentorId, ids] of Object.entries(state.groups)) {
+    if (ids.includes(studentId)) return mentorId;
+  }
+  return null;
+}
+
 export type GroupWriteOutcome =
   | { ok: true; added: boolean }
   | { ok: false; message: string };

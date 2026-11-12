@@ -3,44 +3,49 @@ import "server-only";
 /**
  * AI 接入的**配置读取**（B 负责）。
  *
- * 单独一个文件是有意的：`codebuddy.ts` 顶部会 import SDK，而 SDK 会去解析自带的 CLI 路径。
- * 让自检接口这类地方只想知道"配没配密钥"时，不应该因此把整个 SDK 加载进来。
+ * 2026-11-12 起改为**直连 OpenAI 兼容的 DeepSeek API**，不再通过
+ * `@tencent-ai/agent-sdk` 拉起 CLI 子进程。原因见
+ * `docs/新模块文档-大四毕设指导/大四选导师-方向与分工-历史版本.md` §R1：
+ * 比赛结束后 CodeBuddy 的 CLI 额度通道已不可用，必须换成自有 API key。
+ *
+ * 三条约定：
+ * 1. 密钥、地址、模型名都只从服务端环境变量读，**绝不进浏览器**；
+ * 2. 变量统一用 `SERVER_` 前缀（与数据库配置一致），真实值只放 `.env.local`；
+ * 3. 本文件不加载任何 SDK / HTTP 客户端，自检接口只想知道"配没配密钥"时不应该付这个代价。
  */
 
-export function isAiConfigured(): boolean {
-  return Boolean(process.env.SERVER_CODEBUDDY_API_KEY?.trim());
+/** 没有显式配置地址时的默认值。DeepSeek 的 OpenAI 兼容根地址。 */
+const DEFAULT_BASE_URL = "https://api.deepseek.com";
+
+/** 没有显式配置模型时的默认值。flash 快且便宜，适合提醒/汇总这类短任务。 */
+const DEFAULT_MODEL = "deepseek-flash";
+
+export function resolveAiApiKey(): string {
+  return process.env.SERVER_AI_API_KEY?.trim() ?? "";
 }
 
-/**
- * 组装给 SDK 的环境变量。
- *
- * SDK 只认 `CODEBUDDY_*`，工程统一用 `SERVER_` 前缀 —— 映射放在这里，
- * 这样别处不需要知道 SDK 的变量名，密钥也不会散到多个文件。
- */
-export function buildCodebuddyEnv(): Record<string, string> {
-  const env: Record<string, string> = {
-    CODEBUDDY_API_KEY: process.env.SERVER_CODEBUDDY_API_KEY?.trim() ?? "",
-    // 国内版（workbuddy.cn）必须设为 internal；国际版不要设置这一项。
-    CODEBUDDY_INTERNET_ENVIRONMENT: process.env.SERVER_CODEBUDDY_ENVIRONMENT?.trim() || "internal",
-  };
+export function isAiConfigured(): boolean {
+  return resolveAiApiKey().length > 0;
+}
 
-  // Vercel 上没有可写的 home，CLI 会往那里写配置。探针实测 home 目录 "not-exist"。
-  if (process.env.VERCEL) {
-    env.HOME = "/tmp";
-    env.TMPDIR = "/tmp";
-    env.XDG_CONFIG_HOME = "/tmp/.config";
-  }
+/** 去掉末尾斜杠，避免拼出 `//chat/completions`。 */
+export function resolveAiBaseUrl(): string {
+  const raw = process.env.SERVER_AI_BASE_URL?.trim();
+  const base = raw && raw.length > 0 ? raw : DEFAULT_BASE_URL;
+  return base.replace(/\/+$/, "");
+}
 
-  return env;
+export function resolveAiModel(): string {
+  const raw = process.env.SERVER_AI_MODEL?.trim();
+  return raw && raw.length > 0 ? raw : DEFAULT_MODEL;
 }
 
 /**
  * 单次调用的超时。
  *
- * ⚠️ **实测数据（本机，2026-09-21）**：一次调用耗时主要是 CLI 子进程的固定启动开销
- * （约 13～15 秒，与提问长短无关），再加模型生成，带 JSON 约束的提问约 **25～45 秒**。
- * 所以 20 秒是**不够用的** —— 之前就是因为超时太短导致每次都被中途截断、取不到文本，
- * 而表面上只表现为"AI 从不接管"。可用 `SERVER_AI_TIMEOUT_MS` 调整。
+ * 直连 API 没有 CLI 的 13～15 秒固定启动开销，普通短问答实测约 1 秒；
+ * 但进度汇总这类要读完整条时间轴的生成任务仍可能到 10～30 秒，
+ * 所以默认保留 60 秒，可用 `SERVER_AI_TIMEOUT_MS` 调整。
  */
 export function resolveAiTimeoutMs(): number {
   const raw = Number(process.env.SERVER_AI_TIMEOUT_MS);

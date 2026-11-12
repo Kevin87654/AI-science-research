@@ -35,16 +35,15 @@ import type { Answer, Catalog, Knowledge } from "@/contracts";
 import { finalizeAiAnswer, prepareAiInput, resolveQaMode } from "@/features/questions/ai-answer";
 import { answerQuestion } from "@/features/questions/engine";
 
-import { askText, isAiConfigured } from "./codebuddy";
+import { askText, isAiConfigured } from "./client";
 import { resolveAiTimeoutMs } from "./config";
 
 /**
  * 问答链路自己的超时**下限**（毫秒）。
  *
- * ⚠️ **实测结论（2026-09-22，本机）**：问答的提示词比测评大得多 ——
- * 里面带着完整证据块（每位教师的科室、方向、招募说明、邮箱、核对日期）加 7 条硬性要求，
- * 而测评的提示词只有题目和选项。沿用测评的 60 秒默认值，**实测第一次调用正好在 60.0 秒被截断**
- * （服务端日志：`超过 60000ms 仍未返回`），随后静默回落规则，用户看到的是"AI 没生效"。
+ * 问答的提示词比测评大得多：里面带着完整证据块（每位教师的科室、方向、招募说明、邮箱、
+ * 核对日期）加 7 条硬性要求，模型需要读完再组织答案。旧 CLI 实测 24～63 秒；
+ * 换成 DeepSeek 直连后通常 5～20 秒，但长证据块仍可能慢。
  *
  * 所以这里设的是**下限**而不是默认值：`SERVER_AI_TIMEOUT_MS` 调得比它大就听环境变量的，
  * 调得比它小则不采纳。刻意不让它被调得更短 —— 短了必然降级，那不是"更快"，是"不工作"。
@@ -84,8 +83,12 @@ export function createQaAiAnswerer(
       return null;
     }
 
-    // ③ 调模型（唯一适配器是 B 的 askText；并发上限在那里处理，超时按问答的量级传）。
-    const result = await askText(prepared.prompt, { timeoutMs: resolveQaTimeoutMs() });
+    // ③ 调模型（唯一适配器是 client.ts 的 askText；并发上限在那里处理，超时按问答的量级传）。
+    const result = await askText(prepared.prompt, {
+      timeoutMs: resolveQaTimeoutMs(),
+      // 问答要读完整证据块再组织答案，保留默认推理强度，只放宽输出上限。
+      maxTokens: 3000,
+    });
     if (!result.ok) {
       console.error(`[ai] 问答降级为规则：code=${result.code}`);
       return null;

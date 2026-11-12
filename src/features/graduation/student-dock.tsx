@@ -4,7 +4,7 @@
  * 学生端的左侧图标栏（与全站图标栏同一套形态：收起 72px、移入展开、选中项左侧 3px 黑条）。
  *
  * 为什么放在学生页里、而不是塞进 `app-shell.tsx`：
- * 这里的两个选项**不是路由**，是同一页里的视图切换（学院节点 / 我的进度），
+ * 这里的三个选项**不是路由**，是同一页里的视图切换（学院节点 / 我的进度 / 联系导师），
  * 状态必须和页面内容共享。放进外壳就要把状态提到外壳或用 URL 参数，
  * 前者让外壳变成业务组件，后者让一个纯视图切换产生可被收藏的历史记录 —— 都不划算。
  *
@@ -14,8 +14,8 @@ import Link from "next/link";
 
 import { LogoMark } from "@/components/logo";
 
-/** `school` = 学院统一节点；`mine` = 学生自己记录的节点。 */
-export type StudentView = "school" | "mine";
+/** `school` = 学院统一节点；`mine` = 学生自己记录的节点；`contact` = 联系导师。 */
+export type StudentView = "school" | "mine" | "contact";
 
 const TABS: readonly { key: StudentView; label: string; icon: React.ReactNode }[] = [
   {
@@ -39,6 +39,16 @@ const TABS: readonly { key: StudentView; label: string; icon: React.ReactNode }[
       </svg>
     ),
   },
+  {
+    key: "contact",
+    label: "联系导师",
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 5h16v11H9l-4 3.5V16H4z" />
+        <path d="M8 9h8M8 12h5" />
+      </svg>
+    ),
+  },
 ];
 
 export function StudentDock({
@@ -49,7 +59,7 @@ export function StudentDock({
   onChange: (next: StudentView) => void;
 }) {
   return (
-    <aside className="dock dock-student" aria-label="毕设进度视图">
+    <aside className="dock dock-student" aria-label="学生工作台视图">
       <div className="dock-inner">
         <Link className="dock-brand" href="/" aria-label="返回身份选择">
           <span className="dock-brand-mark">
@@ -61,7 +71,7 @@ export function StudentDock({
           </span>
         </Link>
 
-        <nav className="dock-nav dock-nav-tabs" aria-label="选择时间轴">
+        <nav className="dock-nav dock-nav-tabs" aria-label="选择学生工作台视图">
           {TABS.map((tab) => {
             const active = tab.key === value;
             return (

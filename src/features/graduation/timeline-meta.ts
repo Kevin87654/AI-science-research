@@ -85,7 +85,7 @@ export function latestByDate<T extends { date: string }>(nodes: readonly T[]): T
 /**
  * 从学校节点里挑出「下一个还没到的节点」。
  *
- * 只认有具体日期的节点：`dueDate` 为 `null` 的那些（如「答辩前 10 天」）无法参与比较，
+ * 只认有具体日期的节点：`dueDate` 为 `null` 的那些（审核区间、寒假、「开学第一周」）无法参与比较，
  * 硬算只会给出一个假的倒计时。
  */
 export function pickNextMilestone<T extends { dueDate: string | null }>(

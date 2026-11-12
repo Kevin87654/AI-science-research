@@ -18,7 +18,7 @@ import {
   type QuestionCandidate,
 } from "@/features/assessment/next-question";
 import { DIMENSION_LABELS } from "@/features/assessment/question-bank";
-import { askText, isAiConfigured } from "./codebuddy";
+import { askText, isAiConfigured } from "./client";
 
 /** 追问文案长度上限：它是界面上的一句话，不是段落。 */
 const MAX_PROBE_LENGTH = 80;
@@ -127,18 +127,18 @@ async function chooseWithAi(
 /**
  * AI 介入的频率。
  *
- * ⚠️ **这是本轮实测出来的关键约束**：一次模型调用要 **25～45 秒**（其中约 13～15 秒是
- * CLI 子进程的固定启动开销，与提问长短无关）。所以"每答一题都问一次模型"会让整场测评
- * 光等待就 3～5 分钟 —— 对比赛演示（PRD 要求 3～5 分钟走完闭环）是不可接受的。
- * 做成可配置，让团队按场合选：
+ * 旧实现走 CodeBuddy CLI，一次调用要 25～45 秒（其中 13～15 秒是子进程启动开销），
+ * 所以默认取 `checkpoints`，避免"每题都等模型"拖垮测评。
+ * 2026-11-12 改成 DeepSeek 直连后，单次通常 1～5 秒，但**默认仍保留 checkpoints**：
+ * 这是产品节奏，不是性能妥协；需要更个性化时用环境变量切换即可。
  *
  * - `checkpoints`（默认）：每答完 3 题时交给模型，其余用规则推进；
  *   模型每次都会**完整读一遍全部作答**再决定方向，所以个性化仍在，只是不每题都问。
- * - `every`：**从第二题起**每题都由模型决定，最个性化，但每题要等 20～45 秒；
+ * - `every`：**从第二题起**每题都由模型决定，最个性化；
  * - `off`：完全不调用模型，纯规则（也用于本地快速回归）。
  *
  * 注 1：无论哪种模式，**第一题都用规则瞬时返回** —— 那时模型没有任何作答可参考，
- *       它挑的题和规则完全一样，却要让用户在最不能等的一屏干等几十秒。
+ *       它挑的题和规则完全一样，没必要多等一次网络往返。
  * 注 2：默认取 `checkpoints` 是**可用性优先**的取舍。要恢复"每次回复都由模型引导"，
  *       设一个环境变量即可：`SERVER_AI_STEP_MODE=every`，不需要改代码。
  */
@@ -174,7 +174,7 @@ export async function nextAssessmentStep(request: AssessmentStepRequest): Promis
    * ⚠️ **还没有任何作答时，一律走规则出题。**
    *
    * 这时模型手里没有任何可个性化的依据，"它挑的第一题"和"规则的第一题"没有区别，
-   * 却要让用户在最不能等的那一屏干等 20～45 秒（光 CLI 启动就 13～15 秒）。
+   * 没必要让用户在最不能等的一屏多等一次网络往返。
    * 这一条是接到"点开始后等很久"的反馈后加的：第一题改为瞬时返回，
    * 个性化从第二题开始 —— 那时才有作答可供模型参考。
    */

@@ -24,6 +24,9 @@ export interface DemoAccount extends AccountProfile {
   password: string;
 }
 
+/** 演示导师账号。学生没有明确导师关系时，「联系导师」默认落到这里。 */
+export const DEMO_MENTOR_ID = "T1001";
+
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   {
     id: "20220001",
@@ -34,7 +37,7 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
     password: "student123",
   },
   {
-    id: "T1001",
+    id: DEMO_MENTOR_ID,
     role: "mentor",
     name: "周启明",
     affiliation: "深圳大学 · 计算机与软件学院",

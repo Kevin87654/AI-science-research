@@ -12,12 +12,14 @@
  *
  * 演示数据：账号来自 `demo-accounts.ts`，小组关系放在本机浏览器（`mentor-groups.ts`）。
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { findAccountById, searchStudents, type DemoAccount } from "@/features/auth/demo-accounts";
 import { useRoleSession } from "@/features/auth/use-role-session";
 import { useIsClient } from "@/features/shared/use-local-flow";
 import { addStudent, removeStudent, studentsOf } from "./mentor-groups";
+import { MentorDock, type MentorView } from "./mentor-dock";
+import { ContactPanel } from "./contact-panel";
 import { RoleGate } from "./role-gate";
 import { nodesFor } from "./student-nodes";
 import { StudentNodeTimeline } from "./timeline";
@@ -38,6 +40,12 @@ export function MentorWorkspace() {
   const [searched, setSearched] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
+  const [view, setView] = useState<MentorView>("progress");
+
+  // 与学端一致：切换侧栏视图后回到顶部，避免落在上一页的中间位置。
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [view]);
 
   if (!isClient) return <div className="workspace-loading" aria-busy="true" />;
   if (!session || session.role !== "mentor") return <RoleGate role="mentor" />;
@@ -84,7 +92,9 @@ export function MentorWorkspace() {
   }
 
   return (
-    <div className="workspace">
+    <div className="workspace workspace-docked">
+      <MentorDock value={view} onChange={setView} />
+
       <WorkspaceBar
         role="mentor"
         name={session.name}
@@ -94,34 +104,39 @@ export function MentorWorkspace() {
 
       <main id="main-content" className="container workspace-main">
         <section className="workspace-hero" aria-labelledby="mentor-title">
-          <p className="eyebrow">毕业设计 · 导师管理</p>
+          <p className="eyebrow">{view === "contact" ? "即时通信" : "毕业设计 · 导师管理"}</p>
           <h1 className="workspace-title" id="mentor-title">
-            导师管理
+            {view === "contact" ? "联系学生" : "导师管理"}
           </h1>
           <p className="workspace-lead">
-            按学号搜索学生并加入小组，然后在右栏查看他记录的进度。学生自己更新的节点会直接反映在这里。
+            {view === "progress"
+              ? "按学号搜索学生并加入小组，然后在右栏查看他记录的进度。学生自己更新的节点会直接反映在这里。"
+              : "选一位组内学生开始对话：进度汇报、卡住的问题、下一步安排，都可以直接说。"}
           </p>
 
-          <dl className="stat-row">
-            <div className="stat">
-              <dt className="stat-label">组内学生</dt>
-              <dd className="stat-value">{students.length}</dd>
-              <dd className="stat-note">按学号搜索后添加</dd>
-            </div>
-            <div className="stat">
-              <dt className="stat-label">组内节点总数</dt>
-              <dd className="stat-value">{totalNodes}</dd>
-              <dd className="stat-note">学生自行记录的进度条目</dd>
-            </div>
-            <div className="stat">
-              <dt className="stat-label">我的工号</dt>
-              <dd className="stat-value stat-value-mono">{session.accountId}</dd>
-              <dd className="stat-note">{session.name}</dd>
-            </div>
-          </dl>
+          {view === "contact" ? null : (
+            <dl className="stat-row">
+              <div className="stat">
+                <dt className="stat-label">组内学生</dt>
+                <dd className="stat-value">{students.length}</dd>
+                <dd className="stat-note">按学号搜索后添加</dd>
+              </div>
+              <div className="stat">
+                <dt className="stat-label">组内节点总数</dt>
+                <dd className="stat-value">{totalNodes}</dd>
+                <dd className="stat-note">学生自行记录的进度条目</dd>
+              </div>
+              <div className="stat">
+                <dt className="stat-label">我的工号</dt>
+                <dd className="stat-value stat-value-mono">{session.accountId}</dd>
+                <dd className="stat-note">{session.name}</dd>
+              </div>
+            </dl>
+          )}
         </section>
 
-        <div className="mentor-grid">
+        {view === "progress" ? (
+          <div className="mentor-grid">
           <div className="mentor-col">
             <section className="card" aria-labelledby="add-title">
               <h2 className="card-title" id="add-title">
@@ -260,7 +275,7 @@ export function MentorWorkspace() {
 
                 <div className="mentor-timeline">
                   <p className="section-note">
-                    下面是他自己记录的节点，按日期排列。学院统一的 8 个节点对所有学生都一样，
+                    下面是他自己记录的节点，按日期排列。学院统一的时间轴节点对所有学生都一样，
                     见学生端「学院时间轴」。
                   </p>
                   <StudentNodeTimeline
@@ -273,7 +288,56 @@ export function MentorWorkspace() {
               <p className="mentor-empty">先在左边添加学生，这里会显示他记录的进度时间轴。</p>
             )}
           </section>
-        </div>
+          </div>
+        ) : (
+          <section className="contact-section" aria-label="联系学生">
+            {students.length === 0 ? (
+              <p className="mentor-empty">
+                还没有学生。先切到「学生进度」，搜索学号 <code>20220001</code> 并添加，就能在这里联系他。
+              </p>
+            ) : (
+              <div className="contact-grid">
+                <section className="card" aria-labelledby="contact-students-title">
+                  <h2 className="card-title" id="contact-students-title">
+                    选择学生
+                  </h2>
+                  <ul className="student-list">
+                    {students.map((student) => {
+                      const active = selected === student.id;
+                      return (
+                        <li
+                          className={active ? "student-row student-row-active" : "student-row"}
+                          key={student.id}
+                        >
+                          <button
+                            className="student-row-main"
+                            type="button"
+                            onClick={() => setSelectedId(student.id)}
+                            aria-current={active ? "true" : undefined}
+                          >
+                            <span className="student-name">{student.name}</span>
+                            <span className="student-meta">{student.id}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+
+                {selectedAccount ? (
+                  <ContactPanel
+                    key={selectedAccount.id}
+                    role="mentor"
+                    studentId={selectedAccount.id}
+                    studentName={selectedAccount.name}
+                    mentorId={mentorId}
+                    mentorName={session.name}
+                  />
+                ) : null}
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
       <footer className="container site-footer">科研小助理 · 深圳大学酱味大鸡队呈现</footer>

@@ -17,7 +17,7 @@ import type { SparkAnalysis } from "@/contracts";
 import { INTEREST_DIRECTION_DESCRIPTIONS, INTEREST_DIRECTION_ORDER, INTEREST_DIRECTIONS } from "@/features/interest/directions";
 import { parseSparkAnalysis } from "@/features/spark/analyze";
 
-import { askText, isAiConfigured } from "./codebuddy";
+import { askText, isAiConfigured } from "./client";
 import { resolveAiTimeoutMs } from "./config";
 
 /**
@@ -70,9 +70,9 @@ export async function analyzeSpark(text: string): Promise<SparkAnalysis | null> 
 
   const result = await askText(buildPrompt(text), {
     timeoutMs: resolveTimeoutMs(),
-    // 内容生成类任务用 fast-model：default（auto）会间歇「只吐 thinking、不吐正文」
-    // 导致 `code=empty`（见 codebuddy.ts 文件头诊断），fast-model 稳定且快得多。
-    model: "fast-model",
+    // 归纳亮点不需要长推理；low 能减少 reasoning token，避免正文被截断。
+    reasoningEffort: "low",
+    maxTokens: 2500,
   });
   if (!result.ok) {
     console.error(`[ai] 奇思妙想分析降级：code=${result.code}`);

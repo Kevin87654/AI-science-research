@@ -71,8 +71,8 @@ node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
 |---|---|
 | `/` | 身份入口：选「大四学生 / 导师 / 科研萌新」；前两个先登录再进工作台，第三个直接进 `/assistant` |
 | `/assistant` | 科研小助理首页（原 `/`）：产品定位 + 两个入口（开始测评 / 成长首页）+ 三步流程卡 |
-| `/student` | 学生工作台：左侧栏切换「学院毕设节点」与「我的毕设进度」两条时间轴，后者可自行增删节点 |
-| `/mentor` | 导师工作台：按学号/姓名搜索学生、加入小组、查看组内学生的进度节点 |
+| `/student` | 学生工作台：左侧栏切换「学院毕设节点」「我的毕设进度」「联系导师」；进度页有 AI 对照提醒与一键汇报，联系页与导师即时对话 |
+| `/mentor` | 导师工作台：按学号/姓名搜索学生、加入小组、查看进度；「联系学生」与组内学生即时对话 |
 | `/assessment` | 科研认知测评：题库 15 题（9 核心 + 6 深入），一次一题、自适应出题，可回退改答、可展开「为什么问这一题」 |
 | `/profile` | 科研画像：阶段 + 状态总结、优势 / 待补能力两栏对照、兴趣标签、3 条优先行动、**画像依据** |
 | `/roadmap` | 学习路线：3 个阶段、6～8 项任务，每项带预计耗时与完成标准；4 种任务状态 + 备注 |
@@ -82,12 +82,13 @@ node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
 
 另有 `error.tsx` / `loading.tsx` / `not-found.tsx` 三个全局状态页。
 
-> **登录与数据现状（2026-11-10）**：`/student`、`/mentor` 需要登录，但**登录校验和账号仍是演示实现** ——
-> 账号写在 `src/features/auth/demo-accounts.ts`，登录态、学生节点、导师小组都存在浏览器 localStorage，清缓存即丢。
+> **登录与数据现状（2026-11-12）**：`/student`、`/mentor` 需要登录，但**登录校验和账号仍是演示实现** ——
+> 账号写在 `src/features/auth/demo-accounts.ts`，登录态、学生节点、导师小组都存在浏览器 localStorage，清缓存即丢；
+> 联系消息存在**服务端进程内存**，重启即清空、多实例不共享。
 > 测试账号：学生 `20220001` / `student123`，导师 `T1001` / `mentor123`。
 > 接数据库的改造点与建议表结构见 [`docs/身份入口与毕设进度实现说明.md`](docs/身份入口与毕设进度实现说明.md)。
 
-### 服务端接口（5 个）
+### 服务端接口（统一走 `/api/[...path]`）
 
 | 接口 | 作用 |
 |---|---|
@@ -96,6 +97,11 @@ node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
 | `POST /api/assessment/next` | 出下一题；必带会话，否则 401 |
 | `GET\|POST /api/progress` | 读 / 写任务进度；身份只认服务端会话，请求体带他人 `userId` → 403 |
 | `POST /api/questions` | 科研问答；必带会话 |
+| `POST /api/sparks` | 奇思妙想分析；必带会话 |
+| `POST /api/entry-route` | 生成入门前置路线；必带会话 |
+| `POST /api/graduation/reminder` | 对照学院时间轴生成进度提醒；AI 失败回落规则提醒 |
+| `POST /api/graduation/summary` | 把学生阶段成果汇总成给导师的汇报；AI 失败回落规则汇总 |
+| `GET\|POST /api/graduation/messages` | 拉取 / 发送学生 ↔ 导师消息（前端 2 秒轮询） |
 
 统一返回 `ApiResponse<T>`（`{ ok: true, data }` / `{ ok: false, error: { code, message, requestId } }`），
 错误码用业务枚举（`BAD_REQUEST` / `UNAUTHORIZED` / `FORBIDDEN` / `NOT_FOUND` / `CONFLICT` / `TIMEOUT` / `UPSTREAM_UNAVAILABLE` / `INTERNAL`），
@@ -111,12 +117,15 @@ node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
 加载时经 `validateDataset()` 校验并**深冻结**；资料不合格直接抛错，不会静默降级成空目录。
 所有来源都带 `url` / `publisher` / `evidenceSummary` / `checkedAt` / `pageUpdatedAt` / `verification`。
 
-### AI 的两处用法（都带降级）
+### AI 的用法（都带降级）
 
 | 用途 | 参与什么 | 不参与什么 | 失败时 |
 |---|---|---|---|
 | **测评出题** | 从候选题目里挑下一题并写一句衔接 | **完全不参与打分** | 退回规则出题，界面明说「当前用基础模式出题」 |
 | **问答组织** | 依据筛好的证据组织语言 | 不决定引用（引用由来源注册表还原） | 回落规则回答，角标如实显示「规则回答」 |
+| **奇思妙想 / 入门路线** | 归纳亮点、生成领域导览 | 不伪造来源，不把生成内容说成已核验事实 | 返回空结果，界面提示重试 |
+| **毕设进度提醒** | 对照学院 2027 届时间轴指出下一步 | 不编造学生没做过的节点、不承诺学院没写过的日期 | 回落规则提醒，角标显示「基础提醒」 |
+| **阶段成果汇总** | 把学生记录的节点整理成给导师的汇报 | 不夸大、不编造；记录少就如实说明 | 回落规则汇总，角标显示「基础汇总」 |
 
 > **为什么模型不打分**：PRD 要求评分可解释、可复现。交给模型会让同一份答案在两次运行里得出不同结论，
 > 也无法向学生解释。维度得分、阶段判定、画像生成全部由 `src/features/assessment` 里的**确定性纯函数**完成。
@@ -131,7 +140,7 @@ node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
 | 语言 | TypeScript 5.9（`strict`） |
 | 样式 | Tailwind CSS 4.3 + 手写 `globals.css`（浅色黑白工业风，直角、无辉光） |
 | 数据库 | CloudBase PostgreSQL（PostgREST 接入），未配置时内存实现 |
-| AI | `@tencent-ai/agent-sdk`（服务端调用，`allowedTools: []` + `maxTurns: 1`） |
+| AI | DeepSeek 直连（OpenAI 兼容 `/chat/completions`，服务端调用，`response_format: json_object`） |
 | 测试 | Node 内置 `node --test`，**不引入测试框架** |
 | CI | GitHub Actions：`frozen-lockfile → pnpm test → pnpm check` |
 
@@ -139,7 +148,7 @@ node --env-file=.env.local scripts/verify/identity-isolation.mjs [baseUrl]
 
 ```
 src/
-├─ app/             # App Router：7 个页面 + 5 个 API 路由 + 全局状态页 + globals.css
+├─ app/             # App Router：7 个页面 + 统一 catch-all API + 全局状态页 + globals.css
 ├─ components/      # 全局骨架：app-shell / nav-items / site-header / logo
 ├─ contracts/       # 公共契约（类型即接口），samples.ts 受 tsc 编译校验
 ├─ features/        # 业务模块，纯规则与交互组件同目录
@@ -198,7 +207,9 @@ AI 调用次数的开关（`SERVER_AI_STEP_MODE`）**不是优化项，而是可
 |---|---|---|
 | `SERVER_CLOUDBASE_PG_REST_BASE_URL` | 数据库接入时 | PostgREST 基础地址；缺任一项即退回内存实现 |
 | `SERVER_CLOUDBASE_PG_API_KEY` | 数据库接入时 | 同上。⚠️ **名字写错不会报错**，只会静默退回内存实现 |
-| `SERVER_CODEBUDDY_API_KEY` | 用 AI 时 | 服务端专用，绝不进浏览器、日志或错误信息 |
+| `SERVER_AI_API_KEY` | 用 AI 时 | DeepSeek 密钥，服务端专用，绝不进浏览器、日志或错误信息 |
+| `SERVER_AI_BASE_URL` | 否 | OpenAI 兼容根地址，默认 `https://api.deepseek.com` |
+| `SERVER_AI_MODEL` | 否 | 模型名，默认 `deepseek-flash`；质量优先可换 `deepseek-v4-pro` |
 | `SERVER_AI_STEP_MODE` | 否 | `checkpoints`（默认，每答完 3 题交给模型）/ `every` / `off`。**第一题永远走规则** |
 | `SERVER_AI_TIMEOUT_MS` | 否 | 单次模型调用超时，默认 60000。设太小会被截断并**静默降级**且不报错；问答链路另有 120 秒下限 |
 | `SERVER_AI_QA_MODE` | 否 | 问答链路的模型开关，`off` 时全部走规则回答。**这是一个「关得掉」的开关**：AI 走个人额度，接口挂在公开站点上，演示前需要能不改代码立刻停掉 |
@@ -212,9 +223,10 @@ AI 调用次数的开关（`SERVER_AI_STEP_MODE`）**不是优化项，而是可
 
 写在前面，免得被当成 bug：
 
-- **AI 调用有 13～15 秒的固定冷启动开销**（SDK 每次都会起一个完整 agent 运行时），与提问长短无关。
-  所以默认不是每题都调模型：一场 8 题的测评只有 **2 次**等待，每次约 10 秒（生产实测：测评出题 9.94 / 10.29 / 11.08 秒，问答 15～32 秒）。
-- **模型约 1/3 概率返回空内容**（`code=empty`），系统会静默降级为规则回答并如实显示角标 —— 这不是页面卡住。
+- **AI 改为直连 DeepSeek 后，短问答通常 1～5 秒**；带完整证据块的问答、长汇总约 5～20 秒。
+  超时、输出不合法一律静默降级为规则实现，并在界面上如实标注来源。
+- **联系消息存在服务端进程内存**：同一台服务器上的两个浏览器 2 秒内可互见；进程重启清空，
+  Vercel 多实例之间也不共享。接数据库后换成 `graduation_messages` 表。
 - **`*.vercel.app` 在中国大陆需代理访问**。本轮已决定不购买自定义域名；演示材料里标注代理需求，Demo 视频覆盖线上效果。
 - **匿名会话，没有账号体系**：身份是一个 HttpOnly Cookie（30 天），换浏览器即换人。
 - **画像与路线仍走浏览器本地存储**：数据库目前只有 `sessions` 与 `task_progress` 两张表，

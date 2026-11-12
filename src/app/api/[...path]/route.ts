@@ -5,6 +5,11 @@ import { handleProgressGet, handleProgressPost } from "@/server/api/handlers/pro
 import { handleQuestions } from "@/server/api/handlers/questions";
 import { handleSparks } from "@/server/api/handlers/sparks";
 import { handleEntryRoute } from "@/server/api/handlers/entry-route";
+import { handleGraduationReminder, handleGraduationSummary } from "@/server/api/handlers/graduation-ai";
+import {
+  handleGraduationMessagesGet,
+  handleGraduationMessagesPost,
+} from "@/server/api/handlers/graduation-messages";
 import { jsonError } from "@/server/services/api-response";
 
 /**
@@ -33,6 +38,8 @@ export async function GET(request: Request, { params }: RouteParams) {
       return handleSessionGet(request);
     case "progress":
       return handleProgressGet(request);
+    case "graduation/messages":
+      return handleGraduationMessagesGet(request);
     default:
       return jsonError("NOT_FOUND", "接口不存在。");
   }
@@ -54,6 +61,12 @@ export async function POST(request: Request, { params }: RouteParams) {
       return handleSparks(request);
     case "entry-route":
       return handleEntryRoute(request);
+    case "graduation/reminder":
+      return handleGraduationReminder(request);
+    case "graduation/summary":
+      return handleGraduationSummary(request);
+    case "graduation/messages":
+      return handleGraduationMessagesPost(request);
     default:
       return jsonError("NOT_FOUND", "接口不存在。");
   }

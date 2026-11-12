@@ -21,7 +21,7 @@ export type IdentityKey = Role | "newcomer";
 /** 学校统一节点。由学院下达，所有学生共用一份，学生不能增删。 */
 export interface GraduationMilestone {
   id: string;
-  /** 展示用日期原文，可能只有月份或相对说法（如「答辩前 10 天」）。 */
+  /** 展示用日期原文，可能只有月份或相对说法（如「2027年寒假」「开学第一周」）。 */
   dateLabel: string;
   /** 能落到具体某一天时才填，用于「最近节点还有几天」这类计算；否则为 null。 */
   dueDate: IsoDate | null;
@@ -59,4 +59,55 @@ export interface RoleSession {
   role: Role;
   name: string;
   signedInAt: IsoDateTime;
+}
+
+/** 进度提醒 / 成果汇总的生成方式：模型生成，或规则兜底。 */
+export type GraduationAiSource = "ai" | "rule";
+
+/** 对照学院时间轴给出的进度提醒。 */
+export interface GraduationReminder {
+  source: GraduationAiSource;
+  /** 一句话总体判断。 */
+  headline: string;
+  /** 2～5 条具体提醒。 */
+  items: string[];
+}
+
+/** 阶段性成果汇总，可直接发给导师。 */
+export interface GraduationSummary {
+  source: GraduationAiSource;
+  title: string;
+  body: string;
+  /** 本次汇总覆盖的学生节点数。 */
+  nodeCount: number;
+}
+
+/**
+ * 学生进度 AI 接口的入参。
+ *
+ * 学生节点目前存在浏览器 localStorage，服务端读不到，所以由客户端带上来；
+ * 服务端只做形状校验与截断，不把它当成可信的身份凭据。
+ */
+export interface GraduationAiRequest {
+  studentId: string;
+  /** 客户端本地日期，形如 `2026-11-12`。 */
+  today: IsoDate;
+  nodes: StudentNode[];
+}
+
+/** 联系消息的发送方。 */
+export type ChatSenderRole = "student" | "mentor";
+
+/** `text` = 普通消息；`summary` = AI 汇总后一键发送的成果汇报。 */
+export type ChatMessageKind = "text" | "summary";
+
+/** 学生与导师之间的一条消息。 */
+export interface ChatMessage {
+  id: string;
+  studentId: string;
+  mentorId: string;
+  senderRole: ChatSenderRole;
+  text: string;
+  createdAt: IsoDateTime;
+  kind: ChatMessageKind;
 }

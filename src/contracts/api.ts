@@ -38,7 +38,7 @@ export type HealthStatus = {
     database: "connected" | "not_connected";
     /**
      * 与 `database` 同一套语义：`connected` 只表示**服务端配置已到位**
-     * （存在 `SERVER_CODEBUDDY_API_KEY`），不表示模型此刻可达 ——
+     * （存在 `SERVER_AI_API_KEY`），不表示模型此刻可达 ——
      * 真实可达性要靠一次实际调用验证。
      */
     ai: "connected" | "not_connected";

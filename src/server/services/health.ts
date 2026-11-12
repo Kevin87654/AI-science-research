@@ -15,7 +15,7 @@ export function getHealthStatus(): HealthStatus {
     application: "ready",
     integrations: {
       database: usingPersistentStore ? "connected" : "not_connected",
-      // 注意：这里必须走 config 而不是 codebuddy 适配器 —— 后者会加载 SDK 并解析 CLI 路径，
+      // 注意：这里必须走 config 而不是 client 适配器 —— 后者会加载 HTTP 客户端配置，
       // 让一个"自检"接口去付这个代价没有必要。
       ai: isAiConfigured() ? "connected" : "not_connected",
     },

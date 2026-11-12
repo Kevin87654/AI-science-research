@@ -9,8 +9,9 @@
  */
 import { useEffect, useRef, useState } from "react";
 
-import type { ChatMessage } from "@/contracts";
+import type { StudentNode, ChatMessage } from "@/contracts";
 
+import { WorkflowPanel } from "./workflow-panel";
 import { useConversation } from "./use-conversation";
 
 function formatTime(iso: string): string {
@@ -33,12 +34,14 @@ export function ContactPanel({
   studentName,
   mentorId,
   mentorName,
+  nodes,
 }: {
   role: "student" | "mentor";
   studentId: string;
   studentName: string;
   mentorId: string;
   mentorName: string;
+  nodes?: readonly StudentNode[];
 }) {
   const { messages, loading, error: loadError, send } = useConversation(studentId, mentorId);
   const [draft, setDraft] = useState("");
@@ -94,6 +97,7 @@ export function ContactPanel({
         <span className="chat-status">{loadError ? "重连中" : "每 2 秒同步"}</span>
       </header>
 
+      <WorkflowPanel key={`${studentId}:${mentorId}:${role}`} {...{role,studentId,mentorId,nodes}}/>
       <div className="chat-log" ref={logRef} role="log" aria-live="polite">
         {loading ? (
           <p className="chat-loading">正在加载会话…</p>

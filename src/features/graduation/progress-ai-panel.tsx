@@ -15,6 +15,7 @@ import { useState } from "react";
 import type { GraduationReminder, GraduationSummary, StudentNode } from "@/contracts";
 import { ensureSession, postJson } from "@/features/shared/api-client";
 
+import { formalDraftKey } from "./use-workflow";
 import { sendConversationMessage } from "./conversation-client";
 
 type Busy = "reminder" | "summary" | null;
@@ -177,6 +178,11 @@ export function ProgressAiPanel({
           </div>
           <p className="ai-headline">{summary.title}</p>
           <pre className="ai-summary-body">{summary.body}</pre>
+
+          <button className="button-ghost" type="button" onClick={()=>{
+            try { sessionStorage.setItem(formalDraftKey(studentId,mentorId),JSON.stringify({title:summary.title,content:summary.body,sources:nodes.map(node=>({id:node.id,date:node.date,title:node.title,note:node.note}))}));setError(null);onOpenContact(); }
+            catch {setError("无法保存草稿，请到联系导师中点击正式提交。");}
+          }}>转为正式提交（可编辑）</button>
 
           {sent ? (
             <div className="ai-sent">

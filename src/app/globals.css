@@ -1451,3 +1451,21 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   .section-head { margin-bottom: 18px; }
   .tl-remove { padding: 3px 8px; }
 }
+
+/* Structured records share the existing conversation surface and square elements. */
+.wf-panel {padding:18px 22px;border-bottom:1px solid var(--line);background:var(--surface-quiet);min-width:0;}
+.wf-head,.wf-card>summary {display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.wf-form {display:grid;gap:14px;padding:18px;margin:14px 0;border:1px solid var(--line);background:var(--surface);}
+.wf-form label,.wf-card-body label {display:grid;gap:7px;}
+.wf-card {border:1px solid var(--line);background:var(--surface);margin-top:12px;overflow-wrap:anywhere;}
+.wf-card>summary {padding:12px 16px;cursor:pointer;border-left:3px solid var(--accent-deep);}
+.wf-card>summary::after {content:'展开 / 收起';font-size:12px;color:var(--faint);}
+.wf-card-body {padding:16px;border-top:1px solid var(--line-soft);}
+.wf-prose,.wf-sources p,.wf-feedback p {white-space:pre-wrap;overflow-wrap:anywhere;}
+.wf-reply,.wf-feedback,.wf-sources {margin:14px 0;padding:12px;border-left:3px solid var(--accent-deep);background:var(--surface-quiet);}
+.wf-sources>div,.wf-history>article {padding:10px 0;border-bottom:1px solid var(--line-soft);}
+.wf-meeting {margin-top:20px;padding-top:14px;border-top:1px dashed var(--line);}
+.wf-meeting>button,.wf-card-body>button {margin:6px 8px 6px 0;}
+.wf-history {margin-top:18px;} .wf-panel .form-actions {flex-wrap:wrap;}
+.wf-card textarea {margin-bottom:10px;} .wf-panel h4 {margin:0 0 10px;}
+@media(max-width:640px){.wf-panel {padding:14px 12px;} .wf-form,.wf-card-body {padding:12px;} .wf-card>summary {padding:10px;} .wf-panel .form-actions>button {max-width:100%;white-space:normal;}}

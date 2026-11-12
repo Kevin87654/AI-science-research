@@ -25,11 +25,13 @@ import { addNode, nodesFor, removeNode } from "./student-nodes";
 import { ContactPanel } from "./contact-panel";
 import { mentorIdForStudent } from "./contact";
 import { ProgressAiPanel } from "./progress-ai-panel";
-import { SchoolTimeline, StudentNodeTimeline } from "./timeline";
+import { SchoolTimeline } from "./timeline";
 import { formatIsoDate, latestByDate, pickNextMilestone, toLocalIsoDate } from "./timeline-meta";
 import { useMentorGroupsState } from "./use-mentor-groups";
 import { useStudentNodesState } from "./use-student-nodes";
 import { WorkspaceBar } from "./workspace-bar";
+
+import { ProgressWithMeetings } from "./workflow-panel";
 
 type FormMessage = { kind: "error" | "ok"; text: string } | null;
 
@@ -224,9 +226,11 @@ export function StudentWorkspace() {
               </p>
             ) : null}
 
-            <StudentNodeTimeline
+            <ProgressWithMeetings
               nodes={nodes}
-              emptyHint="还没有记录。把最近做过的一件事写在第 1 条上，进度就开始有了。"
+              studentId={accountId}
+              mentorId={mentorId}
+              onOpenContact={()=>setView("contact")}
               onRemove={(nodeId) => {
                 removeNode(accountId, nodeId);
                 setMessage(null);
@@ -253,6 +257,7 @@ export function StudentWorkspace() {
               role="student"
               studentId={accountId}
               studentName={session.name}
+              nodes={nodes}
               mentorId={mentorId}
               mentorName={mentor?.name ?? "导师"}
             />

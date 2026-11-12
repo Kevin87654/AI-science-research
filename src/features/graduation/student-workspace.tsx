@@ -28,12 +28,16 @@ import { ContactPanel } from "./contact-panel";
 import { mentorIdForStudent } from "./contact";
 import { OrbitTimeline } from "./orbit-timeline";
 import { ProgressAiPanel } from "./progress-ai-panel";
+import { UPCOMING_FEATURES, UpcomingFeature } from "./upcoming-feature";
 import { formatIsoDate, latestByDate, pickNextMilestone, toLocalIsoDate } from "./timeline-meta";
 import { useMentorGroupsState } from "./use-mentor-groups";
 import { useStudentNodesState } from "./use-student-nodes";
 import { WorkspaceBar } from "./workspace-bar";
 
 type FormMessage = { kind: "error" | "ok"; text: string } | null;
+
+const CONTACT_LEAD =
+  "进度汇报、卡住的问题都可以直接发给导师。消息每 2 秒同步一次；演示版暂存在服务端内存，重启后会清空，接数据库后改为持久保存。";
 
 export function StudentWorkspace() {
   const isClient = useIsClient();
@@ -66,6 +70,8 @@ export function StudentWorkspace() {
   const latest = latestByDate(nodes);
   const mentorId = mentorIdForStudent(groupsState, accountId);
   const mentor = findAccountById(mentorId);
+  const upcoming =
+    view === "interest" || view === "mentor-rag" ? UPCOMING_FEATURES[view] : null;
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,17 +178,14 @@ export function StudentWorkspace() {
 
       <main id="main-content" className="container workspace-main">
         <section className="workspace-hero" aria-labelledby="student-title">
-          <p className="eyebrow">{view === "contact" ? "即时通信" : "毕业设计 · 进度追踪"}</p>
+          <p className="eyebrow">
+            {upcoming?.eyebrow ?? (view === "contact" ? "即时通信" : "毕业设计 · 进度追踪")}
+          </p>
           <h1 className="workspace-title" id="student-title">
-            {view === "contact" ? "联系导师" : "毕设进度"}
+            {upcoming?.title ?? (view === "contact" ? "联系导师" : "毕设进度")}
           </h1>
 
-          {view === "contact" ? (
-            <p className="workspace-lead">
-              进度汇报、卡住的问题都可以直接发给导师。消息每 2 秒同步一次；
-              演示版暂存在服务端内存，重启后会清空，接数据库后改为持久保存。
-            </p>
-          ) : (
+          {view === "timeline" ? (
             <dl className="stat-row">
               <div className="stat">
                 <dt className="stat-label">最近一个学校节点</dt>
@@ -200,6 +203,8 @@ export function StudentWorkspace() {
                 <dd className="stat-note">倒计时按本地日期计算</dd>
               </div>
             </dl>
+          ) : (
+            <p className="workspace-lead">{upcoming?.lead ?? CONTACT_LEAD}</p>
           )}
         </section>
 
@@ -243,7 +248,7 @@ export function StudentWorkspace() {
               接入登录与数据库后改为保存到你的账号下，学院节点仍由学院统一维护。
             </p>
           </section>
-        ) : (
+        ) : view === "contact" ? (
           <section className="contact-section" aria-label="联系导师">
             <ContactPanel
               role="student"
@@ -253,6 +258,8 @@ export function StudentWorkspace() {
               mentorName={mentor?.name ?? "导师"}
             />
           </section>
+        ) : (
+          <UpcomingFeature feature={view} onBack={() => setView("timeline")} />
         )}
       </main>
 

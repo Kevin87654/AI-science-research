@@ -2181,3 +2181,119 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   .orbit-dialog,
   .orbit-dialog-veil { animation: none !important; }
 }
+
+/* =============================================================
+   学生侧栏：待开发入口（2026-11-12）
+   入口可选、可切换视图，但功能没有实现，用「待开发」标签明示。
+   ============================================================= */
+.dock-item-soon {
+  flex: none;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--accent-a45);
+  background: var(--accent-a25);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  color: rgba(11, 13, 16, 0.76);
+}
+/* 收起时靠右上角一个小黄点提示「这一项还没做」；展开后由文字标签接管 */
+.dock-item-soon-entry::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  background: var(--accent-deep);
+  border: 1px solid var(--ink);
+}
+.dock:hover .dock-item-soon-entry::after,
+.dock:has(:focus-visible) .dock-item-soon-entry::after { opacity: 0; }
+
+/* =============================================================
+   待开发功能页
+   ============================================================= */
+.soon {
+  margin-top: 28px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(255, 255, 255, 0.55);
+}
+.soon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px dashed var(--line);
+  background: rgba(255, 233, 163, 0.14);
+}
+.soon-stamp {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  padding: 2px 9px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #fff;
+}
+.soon-code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--faint);
+}
+.soon-body { padding: 22px 22px 18px; }
+.soon-heading {
+  margin: 0 0 16px;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.soon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.soon-card {
+  padding: 16px 18px 18px;
+  border-right: 1px solid var(--line);
+}
+.soon-card:last-child { border-right: 0; }
+.soon-index {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--faint);
+}
+.soon-card-title {
+  margin: 6px 0;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.soon-card-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.soon-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+.soon-note { margin: 0; font-size: 12px; color: var(--faint); }
+
+@media (max-width: 900px) {
+  .soon-grid { grid-template-columns: 1fr; }
+  .soon-card { border-right: 0; border-bottom: 1px solid var(--line); }
+  .soon-card:last-child { border-bottom: 0; }
+  .soon-foot { flex-wrap: wrap; }
+}
